@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Area model: the boxes · Math Module 5</title>
+<link rel="stylesheet" href="../lib/engine.css?v=fa68c4a8">
+<link rel="expect" href="#bar" blocking="render">
+</head>
+<body>
+<script src="../lib/engine.js?v=d6885892"></script>
+<script src="../lib/mm5.js?v=8ee61e1a"></script>
+<script src="../lib/embed.js?v=3bc13d2d"></script>
+<script src="audio/en/timings.js?v=f3a070e9"></script>
+<script>
+'use strict';
+/* Mr. O's 4th grade · Math Module 5, Lessons 5.2–5.3: find the missing numbers of an area model.
+   Drawn the way HIS ink draws it (Lesson 5.2 + 5.3 Notebook, this week): boxes side by side, the expanded-form parts
+   written ON TOP of the boxes in red, the 1-digit number at the LEFT side (circled in blue), inside each box his two
+   lines, "3 × 400" small and blue, then the product; the products stacked at the right with "+", a line, and the sum
+   ringed. The site's question picture: two boxes, the top-left number "?", both insides "?".
+   3 × 405 = 1,200 + 15 = 1,215 (the narration's numbers). The trap: the 4 in 405 taken as 4, so 3 × 4 = 12. */
+const CHAPTER = { number: 3, title: 'Area model: the boxes', minutes: 1, language: 'en' };
+
+const C3_X = 300, C3_Y = 300, C3_H = 240, C3_W = [520, 260];   // the boxes: top-left, height, widths
+const C3_SIZE = 76;
+const C3_SX = 1490;                                            // the right edge of his stack
+
+// his blue circle round the side number, drawn on at t0 (el: a T written with anchor 'end')
+const c3Circle = (p, el, size, t0) => {
+  const w = textW(el.textContent, size), x = el._st.x - w / 2, y = el._st.y - size * .34, R = size * .6;
+  const c = path(p, `M${x + R} ${y}A${R} ${R} 0 1 1 ${x + R - .1} ${y - 4}`, { stroke: PEN_BLUE, 'stroke-width': 5, fill: 'none' }, { d: 0 });
+  draw(c, t0, .5);
+  return c;
+};
+// the kit's red slash through one short written number (a T with anchor 'middle'), drawn on at t0
+const c3Slash = (p, el, size, t0) => dSlash(p, el._st.x, el._st.y - size * .36, textW(el.textContent, size) + 26, size * 1.05, t0);
+// a "?" in the middle of a box (the site's question picture)
+const c3Ask = (p, a, i, size, t0) => {
+  const e = T(p, '?', { x: a.boxX(i) + a.w[i] / 2, y: a.y + a.h / 2 + size * .36, size, anchor: 'middle', weight: 700, fill: COL.dim, font: MATH, o: 0 });
+  show(e, t0, .4);
+  return e;
+};
+// a number written in a box's middle (prod: low; expr: high), as a dLine so its pieces can wait for the voice
+const c3In = (p, a, i, items, high, t0, size) => dLine(p, items, a.boxX(i) + a.w[i] / 2, a.y + a.h * (high ? .38 : .8), t0, { size });
+
+const BEATS = [
+  ['intro', 'Area model: the boxes', titleBeat('Lesson 5.2', 'Area model: the boxes', 'Find the missing numbers.')],
+
+  ['parts', 'Break apart', (m) => {
+    const p = panel(0);
+    // "Here is three times four hundred five." — the problem in blue, and the boxes as the question shows them
+    const a = dArea(p, 3, C3_W, C3_X, C3_Y, .3, { h: C3_H, size: C3_SIZE });
+    put(a.side, { o: 0 });
+    const q = a.top(0, '?', .3, COL.dim);
+    const asks = [c3Ask(p, a, 0, C3_SIZE, .3), c3Ask(p, a, 1, C3_SIZE, .3)];
+    const card = dLine(p, ['3', ' × ', '405'], 800, 140, .67, { size: 80, card: BLUE_BG });
+    dLater(card, [1, 2], 1.53);
+    a.top(1, '5', 2.39);
+    // "The side is three." — the 3 at the side, circled in blue
+    put(a.side, { s: .6 }); tw(a.side, { o: 1, s: 1 }, m('side', .78), .4, back);
+    c3Circle(p, a.side, C3_SIZE, m('side', 1.05));
+    // "Break apart four hundred five. Four hundred plus five."
+    dNudge(card.row[2], m('ba', .77));
+    const ex = dLine(p, ['405', ' = ', '400', ' + ', '5'], 690, 690, m('ba', .77), { size: 80 });
+    dLater(ex, [1, 2], m('ex')); dLater(ex, [3], m('ex', .74)); dLater(ex, [4], m('ex', 1.02));
+    // "Write four hundred on top." — the ? turns into 400 (the 5 is already there)
+    hide(q, m('tops', .1), .3);
+    dNudge(a.top(0, '400', m('tops', .3)), m('tops', .97));
+    Object.assign(S, { c3: { p, a, asks } });
+  }],
+
+  ['boxes', 'Multiply each box', (m) => {
+    const { p, a, asks } = S.c3;
+    // "Multiply each box."
+    dNudge(asks[0], m('b1', .74)); dNudge(asks[1], m('b1', .9));
+    // "Three times four hundred is one thousand two hundred." — his two lines in the left box
+    hide(asks[0], m('b1', 2.0), .3);
+    a.fill(0, GROUP_BG[0], m('b1', 2.12));
+    const e1 = c3In(p, a, 0, [{ t: '3 × ', fill: PEN_BLUE }, { t: '400', fill: PEN_BLUE }], true, m('b1', 2.12), 52);
+    dLater(e1, [1], m('b1', 2.89));
+    const p1 = c3In(p, a, 0, ['1,200'], false, m('b1', 4.0), C3_SIZE);
+    // "Three times five is fifteen." — the right box
+    hide(asks[1], m('b2', -.1), .3);
+    a.fill(1, GROUP_BG[1], m('b2'));
+    const e2 = c3In(p, a, 1, [{ t: '3 × ', fill: PEN_BLUE }, { t: '5', fill: PEN_BLUE }], true, m('b2'), 52);
+    dLater(e2, [1], m('b2', .82));
+    const p2 = c3In(p, a, 1, ['15'], false, m('b2', 1.36), C3_SIZE);
+    // "Add." — the two products
+    dNudge(p1, m('add')); dNudge(p2, m('add', .2));
+    // "One thousand two hundred plus fifteen." — his stack at the right
+    const n = (str, y, t0, fill = INK) => { const e = T(p, str, { x: C3_SX, y, size: C3_SIZE, anchor: 'end', weight: 700, fill, font: MATH, o: 0 }); show(e, t0, .4); return e; };
+    n('1,200', 365, m('sum'));
+    const plus = T(p, '+', { x: C3_SX - 270, y: 470, size: C3_SIZE, anchor: 'middle', weight: 700, fill: INK, font: MATH, o: 0 });
+    show(plus, m('sum', 1.79), .4);
+    n('15', 470, m('sum', 2.1));
+    // "That is one thousand two hundred fifteen." — the line, the sum, ringed on the words that say it
+    draw(path(p, `M${C3_SX - 300} 505H${C3_SX + 14}`, { stroke: INK, 'stroke-width': 5, fill: 'none' }, { d: 0 }), m('is', .2), .4);
+    n('1,215', 600, m('is', .58));
+    ctx2d.font = `700 ${C3_SIZE}px ${MATH}`;
+    const w = ctx2d.measureText('1,215').width;
+    dRing(p, C3_SX - w / 2, 600 - C3_SIZE * .34, w + 44, C3_SIZE * 1.25, m('is', 1.0));
+  }],
+
+  ['mistake', 'Watch out', (m) => {
+    const p = panel(0);
+    dWatchOut(p, .3, 800, 92);
+    // "The four in four hundred five is worth four hundred." — her words, each part as she says it
+    const say = dLine(p, ['The ', '4', ' in ', '405', ' is worth ', '400', '.'], 800, 178, m('w'), { size: 48 });
+    dLater(say, [1], m('w', .23)); dLater(say, [2, 3], m('w', .57)); dLater(say, [4], m('w', 2.0)); dLater(say, [5, 6], m('w', 2.5));
+    // the right way first (left): its tops 400 and 5, in ink
+    const A = dArea(p, 3, [340, 150], 200, 410, m('w', .75), { h: 180, size: 60 });
+    put(A.side, { o: 0 });
+    A.top(1, '5', m('w', 1.45), INK);
+    dNudge(A.top(0, '400', m('w', 2.5), INK), m('w', 2.9));
+    // the wrong way (right): the top 4, slashed — it is worth 400
+    const B = dArea(p, 3, [340, 150], 1000, 410, m('w', 2.5), { h: 180, size: 60 });
+    put(B.side, { o: 0 });
+    const b4 = B.top(0, '4', m('w', 2.5), RED);
+    B.top(1, '5', m('w', 2.5), INK);
+    c3Slash(p, b4, 60, m('w', 2.95));
+    // "Three times four hundred is one thousand two hundred." — the right box's inside, ✓ on "one thousand two hundred"
+    [A.side, B.side].forEach(e => show(e, m('not'), .4));
+    const e1 = c3In(p, A, 0, [{ t: '3 × ', fill: PEN_BLUE }, { t: '400', fill: PEN_BLUE }], true, m('not'), 40);
+    dLater(e1, [1], m('not', .77));
+    c3In(p, A, 0, ['1,200'], false, m('not', 1.88), 58);
+    dTick(p, 490, 532, m('not', 2.3));
+    // "Not twelve." — 12 in the wrong box, slashed; her words under it
+    dNote(p, 'Not 12.', B.boxX(0) + 245, 700, m('not', 3.92));
+    const b12 = T(p, '12', { x: B.boxX(0) + 170, y: B.y + B.h * .8, size: 58, anchor: 'middle', weight: 700, fill: RED, font: MATH, o: 0 });
+    show(b12, m('not', 4.25), .3);
+    c3Slash(p, b12, 58, m('not', 4.6));
+  }, { minDur: 12.6 }],
+
+  ['wrap', 'Remember', rememberBeat([['Break apart the big number.', 'w1'], ['Multiply each box.', 'w2'], ['Add.', 'w3']])],
+].map(([id, title, run, extra]) => ({ id, title, run, ...extra }));
+
+boot();
+</script>
+</body>
+</html>

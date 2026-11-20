@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>One group first · Math Module 5</title>
+<link rel="stylesheet" href="../lib/engine.css?v=fa68c4a8">
+<link rel="expect" href="#bar" blocking="render">
+</head>
+<body>
+<script src="../lib/engine.js?v=d6885892"></script>
+<script src="../lib/mm5.js?v=8ee61e1a"></script>
+<script src="../lib/embed.js?v=3bc13d2d"></script>
+<script src="audio/en/timings.js?v=3b552548"></script>
+<script>
+'use strict';
+/* Mr. O's 4th grade · Math Module 5, Lesson 5.7: two-step word problems, "one group first".
+   Drawn the way HIS board writes it (Lesson 5.7 board notes + classwork 11/18–11/19, last year's Test Review): the story
+   at the top with the question underlined in red; his drawing of the groups: a box with one row per bin, each row
+   "8 + 33" (the two kinds in their own colours), "41" written beside every row; then his numbered steps in teal circles:
+     1  How many in one bin? 8 + 33 = 41      2  Multiply by the 4 bins: 4 × 41 = 164 (ringed red)      164 balls (orange)
+   r2 (11/20 reviews): green + blue balls (red is only a mistake); "That is only one bin." pops the first row's 41 (the
+   Math Coach: the main mistake is stopping after step one). The trap: adding all the numbers, 4 + 8 + 33. */
+const CHAPTER = { number: 9, title: 'One group first', minutes: 1, language: 'en' };
+
+// the green balls and the blue balls (each kind keeps its colour). The green is GROUP[1] darkened: GROUP[1] #16a34a
+// is 2.6:1 on the gray board, under the 3:1 large text needs; this one is 3.5:1.
+const C09_GREEN = '#138a3e', C09_BLUE = GROUP[0];
+const C09_SX = 770;                                  // his numbered steps: the teal circles' x
+const C09_TX = C09_SX + 52 * .48 + 34;               // where a step's words start
+const C09_BX = 120, C09_BW = 420, C09_BT = 300, C09_RH = 96;   // his box of bins: left, width, top, one row's height
+const C09_rowY = k => C09_BT + k * C09_RH + C09_RH / 2 + 22;    // a row's baseline
+
+/* The story on a blue card (BLUE = the problem), each word as Ava reads it; the question on its own line, underlined
+   in red at tU. times = when each word is said (beat seconds). Returns { g, card, words, q }. */
+const c09Story = (p, statement, question, times, t0, tU, colours) => {
+  const size = 56, lead = 1.3, x = 150, y = 340, w = 1300;
+  const g = G(p, { o: 0 });
+  show(g, t0, .5);
+  const cardRect = mk('rect', { rx: 30, fill: BLUE_BG, stroke: '#b9cbf0', 'stroke-width': 3 }, g);
+  const a = dStory(g, statement, x, y, t0, { w, size, lead });
+  const q = dStory(g, question, x, a.bottom + size * lead, t0, { w, size, lead });
+  const words = [...a.words, ...q.words];
+  words.forEach((o, k) => { put(o.e, { o: 0 }); show(o.e, times[k], .3); });
+  // the numbers bold in their kind's colour; a colour word only coloured (bold, it closed the space after it)
+  colours.forEach(([wd, fill]) => { const e = a.word(wd); if (e) { e.setAttribute('fill', fill); if (/\d/.test(wd)) e.setAttribute('font-weight', 700); } });
+  q.underline(tU);
+  const card = { x: x - 40, y: y - size - 26, w: w + 80, h: q.bottom - y + size + 26 + size * .45 + 26 };
+  Object.entries({ x: card.x, y: card.y, width: card.w, height: card.h }).forEach(([k, v]) => cardRect.setAttribute(k, v));
+  return { g, card, words, q };
+};
+// the story shrinks to the top of the board (kids can look back at it while the steps are worked)
+const c09StoryUp = (s, t0, k = .72, top = 22) => {
+  const left = (1600 - s.card.w * k) / 2;
+  tw(s.g, { x: left - s.card.x * k, y: top - s.card.y * k, s: k }, t0, .8);
+};
+
+// his red ring round the answer, drawn on at t0 around piece k of a line: an ellipse that holds the digits' whole box
+// (corners inside: (w0/w)² + (h0/h)² < 1), so it never cuts a digit
+const c09Ring = (p, line, k, t0, bold = false) => {
+  // a bold number is wider than its measured width; narrow and tall, it clears the = and the word beside it
+  const e = line.row[k], sz = line.row.size, w0 = e._w * (bold ? 1.08 : 1) + 4, h0 = sz * .72;
+  return dRing(p, e._px, line.row.y - sz * .36, w0 / .82, h0 / .57, t0, RED);
+};
+// a red cross-out through pieces i..j of a line, rising left to right (a longer stretch than one number)
+const c09Cross = (line, i, j, t0) => {
+  const row = line.row, sz = row.size;
+  const a = row[i]._px - row[i]._w / 2 - 6, b = row[j]._px + row[j]._w / 2 + 6;
+  const s = path(line, `M${a} ${row.y + sz * .1}L${b} ${row.y - sz * .88}`, { stroke: RED, 'stroke-width': 7, 'stroke-linecap': 'round', fill: 'none' }, { d: 0 });
+  draw(s, t0, .4);
+  return s;
+};
+
+const BEATS = [
+  ['intro', 'One group first', titleBeat('Lesson 5.7', 'One group first', 'A two-step problem.')],
+
+  ['story', 'Read along', (m) => {
+    const p = panel(0);
+    const at = (k, t) => m(k, t - TIMINGS.story.marks[k]);
+    // "A shelf has four bins. Each bin has eight green balls and thirty-three blue balls. How many balls are there in all?"
+    const times = [1.385, 1.570, 2.024, 2.294, 2.635, 3.701, 4.056, 4.269, 4.610, 4.809, 5.107, 5.561, 5.845, 6.428, 6.698,
+      7.649, 7.905, 8.175, 8.488, 8.615, 8.772, 8.871].map(t => at('r', t));
+    // "Underline the question." — the red line under the question as she says "question"
+    S.story = c09Story(p, 'A shelf has 4 bins. Each bin has 8 green balls and 33 blue balls.', 'How many balls are there in all?',
+      times, .3, at('u', 10.35), [['4', INK], ['8', C09_GREEN], ['green', C09_GREEN], ['33', C09_BLUE], ['blue', C09_BLUE]]);
+  }],
+
+  ['draw', 'One group first', (m) => {
+    const p = S.panel;
+    const at = (k, t) => m(k, t - TIMINGS.draw.marks[k]);
+    c09StoryUp(S.story, .1);
+    // "Draw the bins." — his box, one row a bin, each row "8 + 33" (8 green, 33 blue), row by row
+    const box = G(p, { o: 0 });
+    mk('rect', { x: C09_BX, y: C09_BT, width: C09_BW, height: 4 * C09_RH, rx: 16, fill: '#ffffff', stroke: INK, 'stroke-width': 4 }, box);
+    const hiRow = mk('rect', { x: C09_BX + 8, y: C09_BT + 8, width: C09_BW - 16, height: C09_RH - 12, rx: 12, fill: SUN_BG }, box);
+    put(hiRow, { o: 0 });
+    for (let k = 1; k < 4; k++) mk('path', { d: `M${C09_BX} ${C09_BT + k * C09_RH}H${C09_BX + C09_BW}`, stroke: INK, 'stroke-width': 3, fill: 'none' }, box);
+    show(box, at('d', .4), .5);
+    const rows = [0, 1, 2, 3].map(k => dLine(p, [{ t: '8', fill: C09_GREEN }, ' + ', { t: '33', fill: C09_BLUE }],
+      C09_BX + C09_BW / 2, C09_rowY(k), at('d', .75 + k * .3), { size: 62 }));
+    // "Step one. How many in one bin?" — the first row lights up
+    dBadge(p, 1, C09_SX, 330 - 52 * .34, m('s1'), { r: 52 * .48 });
+    dLine(p, ['How many in one bin?'], C09_TX, 330, at('s1', 3.09), { size: 52, anchor: 'start' });
+    show(hiRow, at('s1', 3.09), .4);
+    // "Eight plus thirty-three is forty-one." — each number as she says it
+    const one = dLine(p, [{ t: '8', fill: C09_GREEN }, ' + ', { t: '33', fill: C09_BLUE }, ' = ', '41'], C09_TX, 432, m('a1'), { size: 64, anchor: 'start' });
+    dLater(one, [1], at('a1', 5.04));
+    dLater(one, [2], at('a1', 5.33));
+    dLater(one, [3, 4], at('a1', 6.34));
+    dNudge(rows[0].row[0], m('a1', .05)); dNudge(rows[0].row[2], at('a1', 5.36));
+    // "Each bin has forty-one." — 41 beside every row; "That is only one bin." — the first row's 41 pops
+    const sums = [0, 1, 2, 3].map(k => dLine(p, ['41'], C09_BX + C09_BW + 70, C09_rowY(k), at('each', 8.32 + k * .18), { size: 62 }));
+    dNudge(sums[0].row[0], at('each', 10.05)); dNudge(sums[0].row[0], at('each', 10.6));
+    // "Step two. Multiply by the four bins." — the 4 in the story pops, then the four 41s
+    dBadge(p, 2, C09_SX, 548 - 52 * .34, m('s2'), { r: 52 * .48 });
+    const by = dLine(p, ['Multiply by the ', '4', ' bins.'], C09_TX, 548, at('s2', 12.72), { size: 52, anchor: 'start' });
+    dLater(by, [1], at('s2', 13.77));
+    dLater(by, [2], at('s2', 14.10));
+    const four = S.story.words.find(o => o.wd === '4');
+    if (four) dNudge(four.e, at('s2', 13.77));
+    sums.forEach((s, k) => dNudge(s.row[0], at('s2', 13.95 + k * .1)));
+    // "Four times forty-one is one hundred sixty-four." — 164 ringed in red as she says it
+    const mul = dLine(p, ['4', ' × ', '41', ' =  ', '164'], C09_TX, 650, m('m'), { size: 64, anchor: 'start' });
+    dLater(mul, [1], at('m', 15.39));
+    dLater(mul, [2], at('m', 15.83));
+    dLater(mul, [3, 4], at('m', 16.49));
+    c09Ring(p, mul, 4, at('m', 16.9));
+    // "There are one hundred sixty-four balls." — the answer, orange
+    const ans = dLine(p, [{ t: '164', fill: ORANGE }, { t: '  balls', fill: ORANGE }], C09_TX, 772, at('n', 19.30), { size: 66, anchor: 'start', card: ORANGE_BG });
+    ans.row[0].querySelectorAll('text').forEach(e => e.setAttribute('font-weight', 700));   // the number bold
+    dLater(ans, [1], at('n', 20.66));
+  }],
+
+  ['mistake', 'Watch out', (m) => {
+    const p = panel(0);
+    const at = (k, t) => m(k, t - TIMINGS.mistake.marks[k]);
+    dWatchOut(p, .3, 800, 100);
+    // "Do not just add all the numbers."
+    dText(p, 'Do not just add all the numbers.', 800, 190, m('w'), { size: 46, fill: INK });
+    // "Not four plus eight plus thirty-three." — below: each number as she says it, then crossed out; the red note
+    const bad = dLine(p, ['4', ' + ', '8', ' + ', '33'].map(t => ({ t, fill: RED })), 760, 548, at('not', 4.00), { size: 76, card: RED_BG });
+    dLater(bad, [1], at('not', 4.35));
+    dLater(bad, [2], at('not', 4.89));
+    dLater(bad, [3], at('not', 5.14));
+    dLater(bad, [4], at('not', 5.43));
+    c09Cross(bad, 0, 4, at('not', 6.0));
+    dNote(p, 'Not 4 + 8 + 33.', 760, 672, at('not', 6.0));
+    // "Multiply. Four times forty-one is one hundred sixty-four." — on top: the right way, said as it is written, ✓
+    const right = dLine(p, ['4', ' × ', '41', ' = ', { t: '164', fill: ORANGE }], 760, 350, at('right', 7.83), { size: 76, card: ORANGE_BG });
+    dLater(right, [1], at('right', 8.10));
+    dLater(right, [2], at('right', 8.54));
+    dLater(right, [3, 4], at('right', 9.44));
+    dTick(p, right._card.x + right._card.w + 44, 350 - 76 * .3, at('right', 10.25));
+  }, { minDur: 13.2 }],
+
+  ['wrap', 'Remember', rememberBeat([['Underline the question.', 'w1'], ['Find one group first.', 'w2'], ['Then multiply.', 'w3']])],
+].map(([id, title, run, extra]) => ({ id, title, run, ...extra }));
+
+boot();
+</script>
+</body>
+</html>

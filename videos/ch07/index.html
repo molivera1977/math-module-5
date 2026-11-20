@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The short way · Math Module 5</title>
+<link rel="stylesheet" href="../lib/engine.css?v=fa68c4a8">
+<link rel="expect" href="#bar" blocking="render">
+</head>
+<body>
+<script src="../lib/engine.js?v=d6885892"></script>
+<script src="../lib/mm5.js?v=8ee61e1a"></script>
+<script src="../lib/embed.js?v=3bc13d2d"></script>
+<script src="audio/en/timings.js?v=317d4445"></script>
+<script>
+'use strict';
+/* Mr. O's 4th grade · Math Module 5, Lesson 5.5: the standard algorithm, "the short way", 2-digit × 1-digit.
+   Drawn the way HIS board writes it (Lessons 5.4 + 5.5 board notes p10 "The short way: 6 × 58" and his Notebook ink
+   11/17): the big number on top, × and the 1-digit number circled in blue, a line, the answer ringed in red, the
+   regrouped number small on top in orange; beside it his numbered steps in his words:
+     1  7 × 6 = 42. Write 2. Put 4 on top.     2  7 × 3 = 21. 21 + 4 = 25.
+   36 × 7 = 252 (tools/check_videos.js: not a real item, not on his sheets, not a site question).
+   The trap (the site's "Forgot to add the numbers on top"): 212 — the 4 on top was never added. */
+const CHAPTER = { number: 7, title: 'The short way', minutes: 1, language: 'en' };
+
+const OX = 470, NY = 330;              // the ones column of his work, the big number's baseline
+const SX = 760;                         // his numbered steps start here
+
+const BEATS = [
+  ['intro', 'The short way', titleBeat('Lesson 5.5', 'The short way', 'Multiply a 2-digit number.')],
+
+  ['steps', 'Start with the ones', (m) => {
+    const p = panel(0);
+    // "Here is thirty-six times seven." — the problem as he heads the board, and his work under it
+    dLine(p, ['36 × 7'], 1010, 160, .3, { size: 76, card: BLUE_BG });
+    const v = S.v = dVMult(p, 7, 36, OX, NY, .3, { size: 112, col: 92, circleT: m('c', .6) });   // "Circle the seven."
+    // "Start with the ones." — his red arrow over the work, then the 6 and the 7 pop
+    dLeftArrow(p, OX - 150, OX + 40, NY - 235, m('s1', .1));
+    v.hl(0, m('s1', .75));
+    // "Seven times six is forty-two." — step 1 on the right, the 42 as she says it
+    const l1 = dStepLine(p, 1, ['7 × 6', ' = ', '42'], SX, 330, m('m1'), { size: 60 });
+    dLater(l1, [1, 2], m('m1', 1.35));
+    // "Write the two." — the 2 under the ones; "Put the four on top." — the 4 over the tens
+    const w1 = dLine(p, ['Write 2.'], SX + 92, 420, m('w1', .3), { size: 46, anchor: 'start' });
+    v.ans(0, '2', m('w1', .45));
+    dLine(p, [{ t: 'Put 4 on top.', fill: ORANGE }], SX + 92 + w1.row.w + 30, 420, m('t1', .3), { size: 46, anchor: 'start' });
+    S.top4 = v.top(1, 4, m('t1', .35));
+    // "Next, the tens. Seven times three is twenty-one."
+    v.hl(1, m('s2', .65));
+    const l2 = dStepLine(p, 2, ['7 × 3', ' = ', '21'], SX, 560, m('m2'), { size: 60 });
+    dLater(l2, [1, 2], m('m2', 1.45));
+    // "Twenty-one plus four is twenty-five." — the 4 on top pops as she says "four"
+    const l3 = dLine(p, ['21', ' + ', { t: '4', fill: ORANGE }, ' = ', '25'], SX + 92, 650, m('a2'), { size: 52, anchor: 'start' });
+    dLater(l3, [1, 2], m('a2', .62));
+    dNudge(S.top4, m('a2', .95));
+    dLater(l3, [3, 4], m('a2', 1.6));
+    // "It is the last place. Write twenty-five." — the last place pops, then the whole 25 goes down (reading specialist
+    // 11/20: at every place before, one digit went on top; the last place writes all of it)
+    dNudge(v.n[1], m('w2', .46));
+    dLine(p, ['Last place: write 25.'], SX + 92, 740, m('w2', 1.76), { size: 46, anchor: 'start' });
+    v.ans(1, '25', m('w2', 2.08));
+  }],
+
+  ['answer', 'The answer', (m) => {
+    const p = S.panel, v = S.v;
+    // "So thirty-six times seven is two hundred fifty-two." — the red ring, and the answer line under the steps
+    v.ring(3, m('a', 2.3));                                                   // on "two hundred fifty-two"
+    const ans = dLine(p, ['36 × 7 = ', '252'], 400, 775, m('a', .5), { size: 64, card: ORANGE_BG });
+    dLater(ans, [1], m('a', 2.3));
+  }],
+
+  ['mistake', 'Watch out', (m) => {
+    const p = panel(0);
+    dWatchOut(p, .3, 800, 92);
+    // "Add the number on top." — her words; the right way first (left), ✓ and no red ring (the series' mistake rule 11/20)
+    dText(p, 'Add the number on top.', 800, 168, m('w'), { size: 42, fill: INK });
+    const r = dVMult(p, 7, 36, 560, 360, m('w', .15), { size: 84, col: 72 });
+    const top = r.top(1, 4, m('w', .3));
+    const good = [...r.ans(0, '2', m('w', .35)), ...r.ans(1, '25', m('w', .5))];
+    dTick(p, 690, 560, m('w', .7));
+    dNudge(top, m('w', .85));                                                   // "on top"
+    // "Do not forget the four. Not two hundred twelve." — the same work with no 4 on top, 212 struck
+    const bad = dVMult(p, 7, 36, 1200, 360, m('not', .1), { size: 84, col: 72 });
+    const miss = mk('rect', { x: 1200 - 72 - 30, y: 360 - 84 - 52, width: 60, height: 62, rx: 8, fill: 'none', stroke: RED, 'stroke-width': 4, 'stroke-dasharray': '10 8' }, p);
+    put(miss, { o: 0 }); show(miss, m('not', .98), .4);                        // where the 4 should be: "the four"
+    bad.ans(0, '212', m('not', .3)).forEach(e => e.setAttribute('fill', RED));
+    const ys = bad.rowY[2] - 84 * .5;
+    const s = path(p, `M${1200 - 2 * 72 - 40} ${ys}L${1200 + 40} ${ys}`, { stroke: RED, 'stroke-width': 7, 'stroke-linecap': 'round', fill: 'none' }, { d: 0 });
+    draw(s, m('not', 1.85), .4);                                                // "Not two hundred twelve."
+    dNote(p, 'Do not forget the 4.', 1130, 760, m('not', .2));
+    // "It is two hundred fifty-two." — the right answer pops
+    good.forEach(e => dNudge(e, m('right', .53)));
+  }, { minDur: 10.4 }],
+
+  ['wrap', 'Remember', rememberBeat([['Start with the ones.', 'w1'], ['Put the extra tens on top.', 'w2'], ['Multiply. Then add the number on top.', 'w3']])],
+].map(([id, title, run, extra]) => ({ id, title, run, ...extra }));
+
+boot();
+</script>
+</body>
+</html>

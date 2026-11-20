@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Partial products · Math Module 5</title>
+<link rel="stylesheet" href="../lib/engine.css?v=fa68c4a8">
+<link rel="expect" href="#bar" blocking="render">
+</head>
+<body>
+<script src="../lib/engine.js?v=d6885892"></script>
+<script src="../lib/mm5.js?v=8ee61e1a"></script>
+<script src="../lib/embed.js?v=3bc13d2d"></script>
+<script src="audio/en/timings.js?v=ea47f419"></script>
+<script>
+'use strict';
+/* Mr. O's 4th grade · Math Module 5, Lesson 5.4: partial products, 2-digit × 1-digit.
+   Drawn the way HIS board writes it (Lesson 5.4 board notes p4, "3 × 152 · Start with the ones."): the big number on
+   top, × and the 1-digit number circled in blue, a line, then the partial products stacked ONES FIRST, each with its
+   "← 3 × 2" in the margin, a + on the last, a line, the sum ringed in red. His red arrow ← over the work.
+     3 × 57 · 21 ← 3 × 7 (the ones product) · 150 ← 3 × 50 (the tens product) · 171
+   (r2 11/20, Math Coach: 4 × 47 had two different 4s on the board; 3 × 57 has none.)
+   The ones part is green and the tens part blue all the way down (GROUP[1] / GROUP[0]); her words "ones product" and
+   "tens product" are the site's (its question asks for both).
+   The trap (her words): "Do not do three times five. The five is worth fifty." */
+const CHAPTER = { number: 6, title: 'Partial products', minutes: 1, language: 'en' };
+
+const OX = 470, NY = 270;               // the ones column of his stack, the top number's baseline
+const SZ = 96, COLW = 80;               // its digit size and column width
+const TENS = GROUP[0], ONES = GROUP[1];
+
+// his "Circle the three.": the kit's stack draws its blue circle at once, so it is taken off and drawn on at t
+const c06Circle = (v, t) => {
+  v.a.querySelector('circle').remove();
+  const R = v.size * .52;
+  const c = path(v.a, `M${R} 0A${R} ${R} 0 1 1 ${R - .1} -4`, { stroke: PEN_BLUE, 'stroke-width': 5, fill: 'none' }, { d: 0 });
+  draw(c, t, .5);
+};
+// his margin note on row k ("← 3 × 7"), where the kit puts it, but at its own time (before the number she says after)
+const c06Margin = (p, v, k, str, t) => {
+  const e = T(p, str, { x: v.cx(0) + COLW * .9, y: v.ry(k) - SZ * .08, size: SZ * .5, anchor: 'start', weight: 600, fill: COL.dim, font: MATH, o: 0 });
+  show(e, t, .4);
+  return e;
+};
+// the line and the sum, where the kit draws them, with the line at "Add the parts." and the sum and its ring when she
+// says it
+const c06Sum = (p, v, str, tLine, tNum) => {
+  const yl = v.ry(1) + SZ * .4;
+  const l = path(p, `M${v.cx(3) - COLW * .3} ${yl}H${v.cx(0) + COLW * .62}`, { stroke: INK, 'stroke-width': 5, fill: 'none' }, { d: 0 });
+  draw(l, tLine, .4);
+  const ys = yl + SZ * 1.15, cs = str.split('');
+  const els = cs.map((c, j) => { const e = T(p, c, { x: v.cx(cs.length - 1 - j), y: ys, size: SZ, anchor: 'middle', weight: 700, font: MATH, o: 0 }); show(e, tNum + j * .1, .4); return e; });
+  dRing(p, OX - (cs.length - 1) * COLW / 2, ys - SZ * .34, cs.length * COLW + SZ * .6, SZ * 1.25, tNum, RED);
+  return els;
+};
+
+const BEATS = [
+  ['intro', 'Partial products', titleBeat('Lesson 5.4', 'Partial products', 'Multiply one place at a time. Then add the parts.')],
+
+  ['steps', 'Start with the ones', (m) => {
+    const p = panel(0);
+    // "Here is three times fifty-seven." — the problem as he heads the board, and his stack under it
+    dLine(p, ['3 × 57'], 1150, 170, .3, { size: 76, card: BLUE_BG });
+    const v = S.v = dPartial(p, 3, 57, OX, NY, .3, { size: SZ, col: COLW, rows: 2, places: 3 });
+    c06Circle(v, m('c', .6));                                                 // "Circle the three."
+    // "Start with the ones." — his red arrow over the work, then the 7 (taking the ones' green) and the 3 pop
+    dLeftArrow(p, OX - 210, OX + 40, NY - 175, m('s1', .1));
+    dNudge(v.n[0], m('s1', .8)); dNudge(v.a, m('s1', .85));
+    tw(v.n[0], { c_fill: ONES }, m('s1', .8), .4);
+    // "Three times seven is twenty-one." — his margin note, then the 21 as she says it
+    const lx = v.cx(0) + COLW * .9 + textW('← 3 × 50', SZ * .5) + 46;       // where "ones product" / "tens product" go
+    c06Margin(p, v, 0, '← 3 × 7', m('o', .1));
+    v.row(0, '21', null, m('o', 1.31), { fill: ONES });
+    // "That is the ones product."
+    dText(p, 'ones product', lx, v.ry(0) - SZ * .08, m('op', .75), { size: 44, fill: ONES, anchor: 'start', weight: 700 });
+    // "Then the tens." — the 5 pops and takes the tens' blue; "The five in fifty-seven is worth fifty." — its 50 over it
+    dNudge(v.n[1], m('s2', .37));
+    tw(v.n[1], { c_fill: TENS }, m('s2', .37), .4);
+    dNudge(v.n[1], m('t', .23));                                              // "The five"
+    const fifty = T(p, '50', { x: v.cx(1), y: NY - SZ * .98, size: SZ * .5, anchor: 'middle', weight: 800, fill: TENS, font: MATH, o: 0 });
+    put(fifty, { s: .5 }); tw(fifty, { o: 1, s: 1 }, m('t', 2.05), .45, back);
+    // "Three times fifty is one hundred fifty."
+    c06Margin(p, v, 1, '← 3 × 50', m('t2', .1));
+    v.row(1, '150', null, m('t2', 1.66), { fill: TENS });
+    // "That is the tens product."
+    dText(p, 'tens product', lx, v.ry(1) - SZ * .08, m('tp', .71), { size: 44, fill: TENS, anchor: 'start', weight: 700 });
+    // "Add the parts." — his + on the last row and the line; "Twenty-one plus one hundred fifty is one hundred seventy-one."
+    const plus = T(p, '+', { x: v.cx(3) + 4, y: v.ry(1), size: SZ * .9, anchor: 'middle', weight: 600, font: MATH, o: 0 });
+    show(plus, m('s3', .05), .4);
+    c06Sum(p, v, '171', m('s3', .3), m('sum', 2.93));
+    v.rowEls[0].forEach(e => dNudge(e, m('sum')));                           // "Twenty-one"
+    v.rowEls[1].forEach(e => dNudge(e, m('sum', 1.28)));                     // "one hundred fifty"
+  }],
+
+  ['mistake', 'Watch out', (m) => {
+    const p = panel(0);
+    dWatchOut(p, .3, 800, 100);
+    // his 57, its 5 in the tens' blue
+    const n57 = dLine(p, [{ t: '5', fill: TENS }, '7'], 800, 330, .5, { size: 110 });
+    // the right one first, on the left: "Three times fifty is one hundred fifty." — then the ✓
+    const r = dLine(p, ['3 × ', { t: '50', fill: TENS }, ' = ', { t: '150', fill: TENS }], 470, 600, m('right'), { size: 72, card: ORANGE_BG });
+    dLater(r, [1], m('right', .77)); dLater(r, [2], m('right', 1.41)); dLater(r, [3], m('right', 1.66));
+    dTick(p, r._card.x + r._card.w + 44, 600 - 72 * .3, m('right', 2.2));
+    // "Do not do three times five." — 3 × 5, the 5 slashed (no "= 15": she does not say it)
+    const bad = dLine(p, ['3 × ', { t: '5', fill: RED }], 1140, 600, m('w', .45), { size: 72, card: RED_BG });
+    dLater(bad, [1], m('w', 1.29));
+    dSlash(p, bad.row[1]._px, 600 - 72 * .36, bad.row[1]._w + 26, 72 * .95, m('w', 1.45));
+    dNote(p, 'Do not do 3 × 5.', 1140, 715, m('w', .6));
+    // "The five is worth fifty." — the 5 in 57 pops, its 50 over it
+    dText(p, 'The 5 is worth 50.', 800, 440, m('not'), { size: 44, fill: INK });
+    dNudge(n57.row[0], m('not', .23));
+    const fifty = T(p, '50', { x: n57.row[0]._px, y: 330 - 110 * .98, size: 56, anchor: 'middle', weight: 800, fill: TENS, font: MATH, o: 0 });
+    put(fifty, { s: .5 }); tw(fifty, { o: 1, s: 1 }, m('not', 1.26), .45, back);
+  }, { minDur: 11.0 }],
+
+  ['wrap', 'Remember', rememberBeat([['Start with the ones.', 'w1'], ['Multiply each place.', 'w2'], ['Add the parts.', 'w3']])],
+].map(([id, title, run, extra]) => ({ id, title, run, ...extra }));
+
+boot();
+</script>
+</body>
+</html>

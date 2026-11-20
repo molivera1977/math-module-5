@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Add two products · Math Module 5</title>
+<link rel="stylesheet" href="../lib/engine.css?v=fa68c4a8">
+<link rel="expect" href="#bar" blocking="render">
+</head>
+<body>
+<script src="../lib/engine.js?v=d6885892"></script>
+<script src="../lib/mm5.js?v=8ee61e1a"></script>
+<script src="../lib/embed.js?v=3bc13d2d"></script>
+<script src="audio/en/timings.js?v=fe78d7b8"></script>
+<script>
+'use strict';
+/* Mr. O's 4th grade · Math Module 5, Lesson 5.7: two-step word problems, "multiply first, then add".
+   Drawn the way HIS board writes it (Lesson 5.7 board notes + classwork 11/18–11/19): the story at the top with the
+   question underlined in red; a small picture of the rows (3 rows of purple, 2 rows of yellow); his numbered steps in
+   teal circles:   1  Multiply first:  3 × 12 = 36  ·  2 × 25 = 50      2  Then add: 36 + 50 = 86      86 flowers (orange,
+   the 86 ringed in red like his board). Each kind keeps its colour all the way (purple flowers purple, yellow flowers a
+   dark amber you can read). r2 (11/20 reviews): purple, not red: red is only a mistake.
+   The trap: adding all the numbers, 3 + 12 + 2 + 25 = 42. */
+const CHAPTER = { number: 10, title: 'Add two products', minutes: 1, language: 'en' };
+
+const C10_PUR = GROUP[2], C10_AMBER = '#9c6a00';           // the purple flowers, the yellow flowers (dark amber to read)
+const C10_DOT_PUR_EDGE = '#6b21a8', C10_DOT_YEL = '#f4c21b', C10_DOT_YEL_EDGE = '#a87400';
+const C10_SX = 750;                                          // his numbered steps: the teal circles' x
+const C10_TX = C10_SX + 52 * .48 + 34;                       // where a step's words start
+
+/* The story on a blue card (BLUE = the problem), each word as Ava reads it; the question on its own line, underlined
+   in red at tU. times = when each word is said (beat seconds). Returns { g, card, words, q }. */
+const c10Story = (p, statement, question, times, t0, tU, colours) => {
+  const size = 56, lead = 1.3, x = 150, y = 340, w = 1300;
+  const g = G(p, { o: 0 });
+  show(g, t0, .5);
+  const cardRect = mk('rect', { rx: 30, fill: BLUE_BG, stroke: '#b9cbf0', 'stroke-width': 3 }, g);
+  const a = dStory(g, statement, x, y, t0, { w, size, lead });
+  const q = dStory(g, question, x, a.bottom + size * lead, t0, { w, size, lead });
+  const words = [...a.words, ...q.words];
+  words.forEach((o, k) => { put(o.e, { o: 0 }); show(o.e, times[k], .3); });
+  // the numbers bold in their kind's colour; a colour word only coloured
+  colours.forEach(([wd, fill]) => { const e = a.word(wd); if (e) { e.setAttribute('fill', fill); if (/\d/.test(wd)) e.setAttribute('font-weight', 700); } });
+  q.underline(tU);
+  const card = { x: x - 40, y: y - size - 26, w: w + 80, h: q.bottom - y + size + 26 + size * .45 + 26 };
+  Object.entries({ x: card.x, y: card.y, width: card.w, height: card.h }).forEach(([k, v]) => cardRect.setAttribute(k, v));
+  return { g, card, words, q };
+};
+// the story shrinks to the top of the board (kids can look back at it while the steps are worked)
+const c10StoryUp = (s, t0, k = .72, top = 22) => {
+  const left = (1600 - s.card.w * k) / 2;
+  tw(s.g, { x: left - s.card.x * k, y: top - s.card.y * k, s: k }, t0, .8);
+};
+// one row of n dots (flowers) from x0 at y, popping in left to right from t0
+const c10Dots = (p, n, x0, y, t0, fill, edge, { gap = 23, r = 9.5 } = {}) => {
+  for (let i = 0; i < n; i++) {
+    const d = G(p, { x: x0 + i * gap, y, o: 0, s: .4 });
+    mk('circle', { cx: 0, cy: 0, r, fill, stroke: edge, 'stroke-width': 2 }, d);
+    tw(d, { o: 1, s: 1 }, t0 + i * .02, .3, back);
+  }
+};
+// a soft strip behind one kind's rows (the rows of one kind read as one group)
+const c10Patch = (p, x, y, w, h, fill, t0) => { const r = mk('rect', { x, y, width: w, height: h, rx: 16, fill }, p); put(r, { o: 0 }); show(r, t0, .4); return r; };
+// his red ring round the answer, drawn on at t0 around piece k of a line: an ellipse that holds the digits' whole box
+// (corners inside: (w0/w)² + (h0/h)² < 1), so it never cuts a digit
+const c10Ring = (p, line, k, t0, bold = false) => {
+  // a bold number is wider than its measured width; narrow and tall, it clears the = and the word beside it
+  const e = line.row[k], sz = line.row.size, w0 = e._w * (bold ? 1.12 : 1) + (bold ? 10 : 4), h0 = sz * .72;
+  return dRing(p, e._px, line.row.y - sz * .36, w0 / .82, h0 / .57, t0, RED);
+};
+
+const BEATS = [
+  ['intro', 'Add two products', titleBeat('Lesson 5.7', 'Add two products', 'Multiply first. Then add.')],
+
+  ['story', 'Read along', (m) => {
+    const p = panel(0);
+    const at = (k, t) => m(k, t - TIMINGS.story.marks[k]);
+    // "A garden has three rows of twelve purple flowers and two rows of twenty-five yellow flowers.
+    //  How many flowers are there in all?"
+    const times = [1.385, 1.584, 1.982, 2.266, 2.649, 2.976, 3.132, 3.530, 3.885, 4.524, 4.965, 5.263, 5.647, 5.845, 6.442, 6.769,
+      7.877, 8.132, 8.402, 8.914, 9.027, 9.198, 9.297].map(t => at('r', t));
+    // "Underline the question." — the red line under the question as she says "question"
+    S.story = c10Story(p, 'A garden has 3 rows of 12 purple flowers and 2 rows of 25 yellow flowers.', 'How many flowers are there in all?',
+      times, .3, at('u', 10.79),
+      [['3', C10_PUR], ['12', C10_PUR], ['purple', C10_PUR], ['2', C10_AMBER], ['25', C10_AMBER], ['yellow', C10_AMBER]]);
+  }],
+
+  ['steps', 'Multiply, then add', (m) => {
+    const p = S.panel;
+    const at = (k, t) => m(k, t - TIMINGS.steps.marks[k]);
+    c10StoryUp(S.story, .1);
+    // "Step one. Multiply first."
+    dBadge(p, 1, C10_SX, 330 - 52 * .34, m('s1'), { r: 52 * .48 });
+    dLine(p, ['Multiply first:'], C10_TX, 330, at('s1', 1.47), { size: 52, anchor: 'start' });
+    // "Three rows of twelve." — the picture: three rows of purple; "Three times twelve is thirty-six."
+    c10Patch(p, 84, 350, 11 * 23 + 32, 2 * 36 + 44, GROUP_BG[2], at('m1', 3.2));
+    [0, 1, 2].forEach(k => c10Dots(p, 12, 100, 372 + k * 36, at('m1', 3.25 + k * .3), C10_PUR, C10_DOT_PUR_EDGE));
+    const r1 = dLine(p, ['3', ' × ', '12', ' = ', '36'].map(t => ({ t, fill: C10_PUR })), C10_TX, 432, at('m1', 5.05), { size: 64, anchor: 'start' });
+    dLater(r1, [1], at('m1', 5.39));
+    dLater(r1, [2], at('m1', 5.73));
+    dLater(r1, [3, 4], at('m1', 6.33));
+    // "Two rows of twenty-five." — two rows of yellow; "Two times twenty-five is fifty."
+    c10Patch(p, 84, 488, 24 * 23 + 32, 36 + 44, '#fbefc6', at('m2', 7.7));
+    [0, 1].forEach(k => c10Dots(p, 25, 100, 510 + k * 36, at('m2', 7.75 + k * .45), C10_DOT_YEL, C10_DOT_YEL_EDGE));
+    const r2 = dLine(p, ['2', ' × ', '25', ' = ', '50'].map(t => ({ t, fill: C10_AMBER })), C10_TX, 532, at('m2', 9.85), { size: 64, anchor: 'start' });
+    dLater(r2, [1], at('m2', 10.14));
+    dLater(r2, [2], at('m2', 10.49));
+    dLater(r2, [3, 4], at('m2', 11.27));
+    // "Step two. Then add. Thirty-six plus fifty is eighty-six." — each kind still in its colour
+    dBadge(p, 2, C10_SX, 645 - 52 * .34, m('s2'), { r: 52 * .48 });
+    const add = dLine(p, ['Then add: ', { t: '36', fill: C10_PUR }, ' + ', { t: '50', fill: C10_AMBER }, ' = ', '86'], C10_TX, 645, at('s2', 13.56), { size: 58, anchor: 'start' });
+    dLater(add, [1], m('a'));
+    dLater(add, [2], at('a', 15.45));
+    dLater(add, [3], at('a', 15.77));
+    dLater(add, [4, 5], at('a', 16.66));
+    dNudge(r1.row[4], m('a', .1)); dNudge(r2.row[4], at('a', 15.8));
+    // "There are eighty-six flowers." — the answer, orange, the 86 ringed in red as she says it
+    const ans = dLine(p, [{ t: '86', fill: ORANGE }, { t: '  flowers', fill: ORANGE }], C10_TX, 772, at('n', 18.44), { size: 66, anchor: 'start', card: ORANGE_BG });
+    ans.row[0].querySelectorAll('text').forEach(e => e.setAttribute('font-weight', 700));   // the number bold
+    c10Ring(p, ans, 0, at('n', 18.5), true);
+    dLater(ans, [1], at('n', 19.04));
+  }],
+
+  ['mistake', 'Watch out', (m) => {
+    const p = panel(0);
+    const at = (k, t) => m(k, t - TIMINGS.mistake.marks[k]);
+    dWatchOut(p, .3, 800, 100);
+    // "Multiply each kind first." — her words; on top, each kind multiplied (purple, amber)
+    dText(p, 'Multiply each kind first.', 800, 185, m('w'), { size: 46, fill: INK });
+    dLine(p, [{ t: '3 × 12 = 36', fill: C10_PUR }], 540, 292, at('w', 2.07), { size: 58 });
+    dLine(p, [{ t: '2 × 25 = 50', fill: C10_AMBER }], 1060, 292, at('w', 2.41), { size: 58 });
+    // "Do not add all the numbers. Not forty-two." — below: all the numbers added, the 42 slashed; the red note
+    dNote(p, 'Do not add all the numbers.', 760, 705, m('not'));
+    const bad = dLine(p, ['3', ' + ', '12', ' + ', '2', ' + ', '25', ' =  ', { t: '42', fill: RED }], 760, 585, at('not', 4.40), { size: 70, card: RED_BG });
+    dLater(bad, [1, 2], at('not', 4.55));
+    dLater(bad, [3, 4], at('not', 4.70));
+    dLater(bad, [5, 6], at('not', 4.85));
+    dLater(bad, [7, 8], at('not', 6.29));
+    const f = bad.row[8];
+    dSlash(bad, f._px, 585 - 70 * .36, f._w + 22, 70 * .95, at('not', 6.45));
+    // "It is eighty-six." — on top, under the products: the right sum, said as it is written, ✓
+    const right = dLine(p, [{ t: '36', fill: C10_PUR }, ' + ', { t: '50', fill: C10_AMBER }, ' = ', { t: '86', fill: ORANGE }], 760, 410, m('right'), { size: 70, card: ORANGE_BG });
+    dLater(right, [4], at('right', 7.86));
+    dTick(p, right._card.x + right._card.w + 44, 410 - 70 * .3, at('right', 8.2));
+  }, { minDur: 11.2 }],
+
+  ['wrap', 'Remember', rememberBeat([['Underline the question.', 'w1'], ['Multiply first.', 'w2'], ['Then add.', 'w3']])],
+].map(([id, title, run, extra]) => ({ id, title, run, ...extra }));
+
+boot();
+</script>
+</body>
+</html>

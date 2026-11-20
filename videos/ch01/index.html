@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Base-ten blocks · Math Module 5</title>
+<link rel="stylesheet" href="../lib/engine.css?v=fa68c4a8">
+<link rel="expect" href="#bar" blocking="render">
+</head>
+<body>
+<script src="../lib/engine.js?v=d6885892"></script>
+<script src="../lib/mm5.js?v=8ee61e1a"></script>
+<script src="../lib/embed.js?v=3bc13d2d"></script>
+<script src="audio/en/timings.js?v=aec43406"></script>
+<script>
+'use strict';
+/* Mr. O's 4th grade · Math Module 5, Lesson 5.1: multiply with base-ten blocks. "Count one group. Then count the groups."
+   Drawn the way HIS Test Review draws it (last year): one group's blocks with "100", "10", "1" written on them in blue,
+   a GREEN line under each group, then the equation under it. The site's own picture: each group a row
+   (flats, then rods, then cubes) inside a soft box, the groups stacked.
+   2 × 312 = 624 and 4 × 52 = 208 (the narration's numbers). The trap: reading the blocks the wrong way, 132 for 312. */
+const CHAPTER = { number: 1, title: 'Base-ten blocks', minutes: 1, language: 'en' };
+
+const C1_FLAT = 120;                          // the hundred's side in the first picture (the ten and the one follow it)
+const C1_X0 = 190, C1_Y = [262, 522];         // each group row's left end and middle height
+const C1_BOX = { x: 160, w: 590, h: 200 };    // the soft box round each group row
+const C1_TENS = GROUP[2], C1_ONES = GROUP[1]; // the tens and the ones take these colours in "4 groups of 52"
+
+// a soft box behind one group row (cy = its middle); its fill and stroke can turn to a group's colours
+const c1Box = (back, cx, cy, w, h, t0) => {
+  const r = mk('rect', { x: cx - w / 2, y: cy - h / 2, width: w, height: h, rx: 20, fill: '#f4f6f8', stroke: '#aab4bd', 'stroke-width': 3 }, back);
+  put(r, { o: 0, c_fill: '#f4f6f8', c_stroke: '#aab4bd' });
+  show(r, t0, .4);
+  return r;
+};
+const c1Tint = (r, i, t0) => tw(r, { c_fill: GROUP_BG[i], c_stroke: GROUP[i] }, t0, .5);
+// his blue numbers written on the blocks of one group ("100" on a flat, "10" over a rod, "1" over a cube), kid size,
+// with a white edge so the blue reads on the blue flat. blocks = the blocks to write on; times = when each is written;
+// strs = other numbers to write in the same places (the mistake's wrong reading, in red)
+const c1Write = (p, blocks, times, size, { fill = PEN_BLUE, strs = null } = {}) => blocks.map((e, j) => {
+  const [lx, ly, s] = e._lab;
+  const onFlat = s === '100', str = strs ? strs[j] : s;
+  const t = T(p, str, { x: lx, y: ly + (onFlat ? size * .34 : 0), size: onFlat ? size : size * .9, anchor: 'middle', weight: 800, fill, font: MATH, o: 0 });
+  t.setAttribute('stroke', '#ffffff'); t.setAttribute('stroke-width', 7); t.setAttribute('paint-order', 'stroke'); t.setAttribute('stroke-linejoin', 'round');
+  put(t, { s: .6 }); tw(t, { o: 1, s: 1 }, times[j], .4, back);
+  return t;
+});
+// the two cubes of a row moved apart, so his two "1"s over them read as 1 and 1, not 11
+const c1Spread = (row, step) => row.cubes.forEach((e, j) => {
+  const x = row.rods[0]._st.x + step * (j + 1);
+  put(e, { x }); e._lab = [x, e._lab[1], e._lab[2]];
+});
+// a red ring round pieces i..j of a dLine (the answer), 22 px clear of the digits on each side
+const c1Ring = (p, line, i, j, t0) => {
+  const a = line.row[i], b = line.row[j], l = a._px - a._w / 2, r = b._px + b._w / 2, size = line.row.size;
+  return dRing(p, (l + r) / 2, line.row.y - size * .34, r - l + 44, size * 1.25, t0);
+};
+// fly e from `from` to `to` along a curve bending out through `via` (round the lines in between, not across them)
+const c1Arc = (e, from, to, via, t0, dur) => {
+  put(e, { x: from[0], y: from[1] });
+  const at = (q, k) => (1 - q) * (1 - q) * from[k] + 2 * q * (1 - q) * via[k] + q * q * to[k];
+  prog(q => put(e, { x: at(q, 0), y: at(q, 1) }), t0, dur, io);
+};
+// one row of the key: a block and her word for it
+const c1Key = (leg, block, word, y, t0, tWord) => {
+  put(block, { s: .6 }); tw(block, { o: 1, s: 1 }, t0, .4, back);
+  dText(leg, word, 1200, y + 18, tWord, { size: 52, fill: INK, weight: 700, anchor: 'start' });
+};
+
+const BEATS = [
+  ['intro', 'Base-ten blocks', titleBeat('Lesson 5.1', 'Base-ten blocks', 'Count one group. Then count the groups.')],
+
+  ['group', 'Count one group', (m) => {
+    const p = panel(0);
+    const back = G(p);                                   // the soft boxes, under the blocks
+    const box1 = c1Box(back, C1_BOX.x + C1_BOX.w / 2, C1_Y[0] - 17, C1_BOX.w, C1_BOX.h, .3);
+    const box2 = c1Box(back, C1_BOX.x + C1_BOX.w / 2, C1_Y[1] - 17, C1_BOX.w, C1_BOX.h, .3);
+    // "Here are some base-ten blocks." — two groups of 3 flats, 1 rod, 2 cubes
+    const row2g = G(p);
+    const r1 = dBlockRow(p, 3, 1, 2, C1_X0, C1_Y[0], .4, { flat: C1_FLAT });
+    const r2 = dBlockRow(row2g, 3, 1, 2, C1_X0, C1_Y[1], .7, { flat: C1_FLAT });
+    c1Spread(r1, 50); c1Spread(r2, 50);
+    // the key on the right: "Big squares are hundreds. Long rods are tens. Small cubes are ones." (gone once counting starts)
+    const leg = G(p);
+    c1Key(leg, dFlat(leg, 1110, 200, 100), 'hundreds', 200, m('k', .2), m('k', 1.02));
+    c1Key(leg, dRod(leg, 1110, 345, 100), 'tens', 345, m('r', .3), m('r', .99));
+    c1Key(leg, dCube(leg, 1110, 462, 18), 'ones', 462, m('c', .4), m('c', 1.08));
+    [...r1.flats, ...r2.flats].forEach((e, j) => dNudge(e, m('k', .35 + j * .06)));
+    [...r1.rods, ...r2.rods].forEach((e, j) => dNudge(e, m('r', .45 + j * .1)));
+    [...r1.cubes, ...r2.cubes].forEach((e, j) => dNudge(e, m('c', .55 + j * .08)));
+    // "Count one group." — the key goes, group 1 takes its colour, group 2 steps back
+    hide(leg, m('one'), .5);
+    c1Tint(box1, 0, m('one', .4));
+    tw(row2g, { o: .35 }, m('one', .4), .5);
+    tw(box2, { o: .45 }, m('one', .4), .5);
+    // "Three hundreds." "One ten." "Two ones." — his blue numbers on group 1's blocks as she counts
+    c1Write(p, r1.flats, [m('h', .05), m('h', .3), m('h', .55)], 42);
+    c1Write(p, r1.rods, [m('t', .37)], 42);
+    c1Write(p, r1.cubes, [m('o', .05), m('o', .34)], 42);
+    // "That is three hundred twelve."
+    const n = dLine(p, ['312'], 905, 292, m('is', .6), { size: 88, card: GROUP_BG[0] });
+    Object.assign(S, { c1: { p, box1, box2, row2g, n } });
+  }],
+
+  ['groups', 'Count the groups', (m) => {
+    const { p, box2, row2g } = S.c1;
+    // "Now count the groups." — group 2 comes back
+    tw(row2g, { o: 1 }, m('g', .1), .4);
+    tw(box2, { o: 1 }, m('g', .1), .4);
+    // "One, two." — his green line under each group, and its number
+    const bottom = cy => cy - 17 + C1_BOX.h / 2 + 16;
+    dGroupLine(p, C1_BOX.x, C1_BOX.x + C1_BOX.w, bottom(C1_Y[0]), m('g1'));
+    const n1 = dText(p, '1', 108, C1_Y[0] + 6, m('g1'), { size: 68, fill: GREEN, weight: 800 });
+    c1Tint(box2, 1, m('g2'));
+    dGroupLine(p, C1_BOX.x, C1_BOX.x + C1_BOX.w, bottom(C1_Y[1]), m('g2'));
+    const n2 = dText(p, '2', 108, C1_Y[1] + 6, m('g2'), { size: 68, fill: GREEN, weight: 800 });
+    dNudge(n1, m('g1', .3)); dNudge(n2, m('g2', .3));
+    // "There are two groups of three hundred twelve."
+    const g = dLine(p, ['2', ' groups of ', '312'], 1130, 500, m('eq', .41), { size: 62 });
+    dLater(g, [1], m('eq', .72)); dLater(g, [2], m('eq', 1.38));
+    dNudge(S.c1.n, m('eq', 1.5));
+    // "Two times three hundred twelve is six hundred twenty-four."
+    const x = dLine(p, ['2', ' × ', '312', ' =  ', '624'], 1130, 690, m('x'), { size: 84, card: ORANGE_BG });
+    dLater(x, [1], m('x', .3)); dLater(x, [2], m('x', .74)); dLater(x, [3, 4], m('x', 2.26));
+    c1Ring(p, x, 4, 4, m('x', 2.4));                                      // on "six hundred twenty-four"
+  }],
+
+  ['tens', 'Four groups of 52', (m) => {
+    const p = panel(0);
+    // "Here are four groups of fifty-two."
+    const hd = dLine(p, ['4', ' groups of ', '52'], 100, 100, m('n', .3), { size: 54, anchor: 'start' });
+    dLater(hd, [0], m('n', .48)); dLater(hd, [2], m('n', 1.35));
+    const back = G(p), RY = [222, 367, 512, 657];
+    const rows = RY.map((y, i) => {
+      c1Box(back, 245, y - 8, 290, 128, .3 + i * .3);
+      return dBlockRow(p, 0, 5, 2, 130, y, .35 + i * .3, { flat: 110, gap: .05 });
+    });
+    const X0 = 470, SZ = 58, LY = [200, 308, 416, 524, 632];
+    // "Fifty-two is five tens and two ones."
+    const l1 = dLine(p, ['52', ' = ', { t: '5 tens', fill: C1_TENS }, ' + ', { t: '2 ones', fill: C1_ONES }], X0, LY[0], m('each'), { size: SZ, anchor: 'start' });
+    dLater(l1, [1, 2], m('each', 1.12)); dLater(l1, [3, 4], m('each', 2.26));
+    // "Multiply each by four."
+    dNudge(l1.row[2], m('mul', .72)); dNudge(l1.row[4], m('mul', .85));
+    // "Four times five tens is twenty tens." — the rods take the tens' colour
+    const l2 = dLine(p, ['4 × ', { t: '5 tens', fill: C1_TENS }, ' = ', { t: '20 tens', fill: C1_TENS }], X0, LY[1], m('mt'), { size: SZ, anchor: 'start' });
+    dLater(l2, [1], m('mt', .68)); dLater(l2, [2, 3], m('mt', 1.62));
+    rows.flatMap(r => r.rods).forEach((e, j) => tw(e._r, { c_fill: C1_TENS }, m('mt', .7 + j * .04), .35));
+    // "Four times two ones is eight ones." — the cubes take the ones' colour
+    const l3 = dLine(p, ['4 × ', { t: '2 ones', fill: C1_ONES }, ' = ', { t: '8 ones', fill: C1_ONES }], X0, LY[2], m('mo'), { size: SZ, anchor: 'start' });
+    dLater(l3, [1], m('mo', .81)); dLater(l3, [2, 3], m('mo', 1.51));
+    rows.flatMap(r => r.cubes).forEach((e, j) => tw(e._r, { c_fill: C1_ONES }, m('mo', .85 + j * .08), .35));
+    // "That is twenty tens plus eight ones." (the site question's own answer shape)
+    const l4 = dLine(p, [{ t: '20 tens', fill: C1_TENS }, ' + ', { t: '8', fill: C1_ONES }, { t: ' ones', fill: C1_ONES }], X0, LY[3], m('sum', .53), { size: SZ, anchor: 'start' });
+    dLater(l4, [1], m('sum', 1.41)); dLater(l4, [2, 3], m('sum', 1.82));
+    // "Twenty tens is two hundred."
+    const l5 = dLine(p, [{ t: '20 tens', fill: C1_TENS }, ' = ', '200'], X0, LY[4], m('tt'), { size: SZ, anchor: 'start' });
+    dLater(l5, [1, 2], m('tt', 1.15));
+    // "So four times fifty-two is two hundred eight." — the 200 pops, the 8 ones fly into the answer, 208 ringed
+    const l6 = dLine(p, ['4', ' × ', '52', ' =  ', '20', { t: '8', fill: C1_ONES }], X0 + 30, 770, m('is', .48), { size: 72, anchor: 'start', card: ORANGE_BG });
+    dLater(l6, [1, 2], m('is', 1.16)); dLater(l6, [3, 4], m('is', 2.22));
+    dNudge(l5.row[2], m('is', 2.22));
+    dLater(l6, [5], m('is', 2.55));
+    c1Arc(l6.row[5], [l4.row[2]._px, l4.row.y], [l6.row[5]._px, l6.row.y], [1150, 600], m('is', 2.55), .75);
+    c1Ring(p, l6, 4, 5, m('is', 3.05));                                  // on "two hundred eight"
+  }],
+
+  ['mistake', 'Watch out', (m) => {
+    const p = panel(0);
+    dWatchOut(p, .3, 800, 92);
+    // "A big square is a hundred. A long rod is a ten." — her words, and on the left one group read the right way
+    dText(p, 'A big square is a hundred. A long rod is a ten.', 800, 172, m('w'), { size: 42, fill: INK });
+    c1Box(G(p), 400, 395, 500, 175, m('w', .1));
+    const r = dBlockRow(p, 3, 1, 2, 176, 410, m('w', .1), { flat: 100, gap: .05 });
+    c1Spread(r, 42);
+    r.flats.forEach((e, j) => dNudge(e, m('w', .54 + j * .06)));
+    c1Write(p, r.flats, [m('w', 1.31), m('w', 1.45), m('w', 1.59)], 38);
+    dNudge(r.rods[0], m('w', 2.87));
+    c1Write(p, r.rods, [m('w', 3.49)], 38);
+    // "Do not mix them up. Not one hundred thirty-two." — the same group read the wrong way: the rod "100", the squares
+    // "10", in red; 132, slashed
+    c1Box(G(p), 1200, 395, 500, 175, m('not'));
+    const b = dBlockRow(p, 3, 1, 2, 976, 410, m('not'), { flat: 100, gap: .05 });
+    c1Spread(b, 42);
+    dNote(p, 'Do not mix them up.', 1200, 760, m('not', .1));
+    c1Write(p, b.rods, [m('not', 2.15)], 38, { fill: RED, strs: ['100'] });
+    c1Write(p, b.flats, [m('not', 2.87), m('not', 2.97), m('not', 3.07)], 38, { fill: RED, strs: ['10', '10', '10'] });
+    c1Write(p, b.cubes, [m('not', 3.17), m('not', 3.27)], 38, { fill: PEN_BLUE });
+    dText(p, '132', 1200, 650, m('not', 2.15), { size: 76, fill: RED, weight: 700 });
+    dSlash(p, 1200, 650 - 76 * .36, textW('132', 76) + 40, 84, m('not', 3.3));
+    // "It is three hundred twelve." — the right way first (left): the ones written too, and 312 ✓
+    c1Write(p, r.cubes, [m('right', 1.22), m('right', 1.32)], 38);
+    dRight(p, ['312'], 400, 650, m('right', .38), { size: 76 });
+  }, { minDur: 13.5 }],
+
+  ['wrap', 'Remember', rememberBeat([['Count one group.', 'w1'], ['Count the groups.', 'w2'], ['Multiply.', 'w3']])],
+].map(([id, title, run, extra]) => ({ id, title, run, ...extra }));
+
+boot();
+</script>
+</body>
+</html>

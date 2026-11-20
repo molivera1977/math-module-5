@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Area model: the equation · Math Module 5</title>
+<link rel="stylesheet" href="../lib/engine.css?v=fa68c4a8">
+<link rel="expect" href="#bar" blocking="render">
+</head>
+<body>
+<script src="../lib/engine.js?v=d6885892"></script>
+<script src="../lib/mm5.js?v=8ee61e1a"></script>
+<script src="../lib/embed.js?v=3bc13d2d"></script>
+<script src="audio/en/timings.js?v=7434f9d8"></script>
+<script>
+'use strict';
+/* Mr. O's 4th grade · Math Module 5, Lesson 5.2: find the equation an area model shows.
+   Drawn the way THE TEST draws it (item 1 kind): a grid of squares, two shaded parts, a bracket and number over each
+   part ("10", "4") and a bracket and number at the left side ("9"). His 5.2 board notes: "Area model: a rectangle split
+   into boxes. Each box is one small multiplication." "4 × 17 = (4 × 10) + (4 × 7)".
+   9 × 14 = 90 + 36 = 126 (the narration's numbers). The trap: taking the 10 for a side, 10 × 13. */
+const CHAPTER = { number: 2, title: 'Area model: the equation', minutes: 1, language: 'en' };
+
+const C2_GX = 240, C2_GY = 250, C2_CELL = 40;        // the grid's top-left and its square
+const C2_A = '#9cc0f5', C2_B = '#93dbab';             // the two parts take two group colours (mid shades: the
+                                                      // grid's white lines and the ink on top both still read)
+const C2_RX = 1200;                                   // the right column's centre
+
+// a white edge round text (and the text inside a dLine piece) so it reads on a coloured part
+const c2Halo = e => [e, ...e.querySelectorAll('text')].forEach(t => {
+  if (t.tagName !== 'text') return;
+  t.setAttribute('stroke', '#ffffff'); t.setAttribute('stroke-width', 8); t.setAttribute('paint-order', 'stroke'); t.setAttribute('stroke-linejoin', 'round');
+});
+// his blue circle round the side number (the 1-digit number), drawn on at t0
+const c2Circle = (p, el, size, t0) => {
+  const w = textW(el.textContent, size), x = el._st.x - w / 2, y = el._st.y - size * .34, R = size * .62;
+  const c = path(p, `M${x + R} ${y}A${R} ${R} 0 1 1 ${x + R - .1} ${y - 4}`, { stroke: PEN_BLUE, 'stroke-width': 5, fill: 'none' }, { d: 0 });
+  draw(c, t0, .5);
+  return c;
+};
+// the grid, with its numbers hidden until the voice says them; the side number moved a little left for its circle
+const c2Grid = (p, x, y, t0, cell, size) => {
+  const a = dAreaGrid(p, 9, [10, 4], x, y, t0, { cell, size });
+  put(a.side, { x: x - size * .8 });
+  [a.side, ...a.tops].forEach(e => put(e, { o: 0 }));
+  return a;
+};
+// a red ring round pieces i..j of a dLine (the answer), 22 px clear of the digits on each side
+const c2Ring = (p, line, i, j, t0) => {
+  const a = line.row[i], b = line.row[j], l = a._px - a._w / 2, r = b._px + b._w / 2, size = line.row.size;
+  return dRing(p, (l + r) / 2, line.row.y - size * .34, r - l + 44, size * 1.25, t0);
+};
+// a number of the grid, popping in as she says it
+const c2Pop = (e, t0) => { put(e, { s: .6 }); tw(e, { o: 1, s: 1 }, t0, .4, back); };
+
+const BEATS = [
+  ['intro', 'Area model: the equation', titleBeat('Lesson 5.2', 'Area model: the equation', 'Find the side and the top.')],
+
+  ['model', 'Find the equation', (m) => {
+    const p = panel(0);
+    // "Here is an area model."
+    const a = c2Grid(p, C2_GX, C2_GY, .3, C2_CELL, 64);
+    // "The side is nine." — the 9 at the side, circled in blue
+    c2Pop(a.side, m('side', .77));
+    c2Circle(p, a.side, 64, m('side', 1.05));
+    // "The top has ten and four."
+    c2Pop(a.tops[0], m('top', .78));
+    c2Pop(a.tops[1], m('top', 1.31));
+    // "Add the top. Ten plus four is fourteen." — the two parts take their colours, and so do their numbers
+    a.color(0, C2_A, m('add', 1.29)); tw(a.tops[0], { c_fill: GROUP[0] }, m('add', 1.29), .5);
+    a.color(1, C2_B, m('add', 1.96)); tw(a.tops[1], { c_fill: GROUP[1] }, m('add', 1.96), .5);
+    const s = dLine(p, [{ t: '10', fill: GROUP[0] }, ' + ', { t: '4', fill: GROUP[1] }, ' = ', '14'], C2_RX, 330, m('add', 1.29), { size: 76 });
+    dLater(s, [1], m('add', 1.63)); dLater(s, [2], m('add', 1.96)); dLater(s, [3, 4], m('add', 2.53));
+    // "So the model shows nine times fourteen." — the problem, in blue
+    const q = dLine(p, ['9', ' × ', '14'], C2_RX, 495, m('eq', 1.25), { size: 88, card: BLUE_BG });
+    dLater(q, [1, 2], m('eq', 2.03));
+    Object.assign(S, { c2: { p, a, s, q } });
+  }],
+
+  ['boxes', 'Each box', (m) => {
+    const { p, a } = S.c2;
+    // "Each box is one small multiplication."
+    dText(p, 'Each box is one small multiplication.', 800, 112, m('b', .1), { size: 44, fill: INK });
+    // "Nine times ten is ninety." — in the 10 part: his two lines, "9 × 10" small and blue, then 90
+    const mid = i => C2_GX + C2_CELL * (i ? 10 + 2 : 5);
+    const e1 = dLine(p, [{ t: '9 × ', fill: PEN_BLUE }, { t: '10', fill: PEN_BLUE }], mid(0), 400, m('b1'), { size: 56 });
+    dLater(e1, [1], m('b1', .8)); c2Halo(e1);
+    dNudge(a.side, m('b1')); dNudge(a.tops[0], m('b1', .8));
+    const p1 = dLine(p, ['90'], mid(0), 515, m('b1', 1.25), { size: 100 }); c2Halo(p1);
+    // "Nine times four is thirty-six." — in the 4 part
+    const e2 = dLine(p, [{ t: '9 × ', fill: PEN_BLUE }, { t: '4', fill: PEN_BLUE }], mid(1), 400, m('b2'), { size: 50 });
+    dLater(e2, [1], m('b2', .8)); c2Halo(e2);
+    dNudge(a.side, m('b2')); dNudge(a.tops[1], m('b2', .8));
+    const p2 = dLine(p, ['36'], mid(1), 515, m('b2', 1.39), { size: 100 }); c2Halo(p2);
+    // "Ninety plus thirty-six is one hundred twenty-six."
+    const s = dLine(p, ['90', ' + ', '36', ' = ', '126'], C2_RX, 655, m('sum'), { size: 68 });
+    dLater(s, [1], m('sum', .48)); dLater(s, [2], m('sum', .77)); dLater(s, [3, 4], m('sum', 2.06));
+    dNudge(p1, m('sum', .05)); dNudge(p2, m('sum', .77));
+    // "Nine times fourteen is one hundred twenty-six." — the answer card, the 126 ringed
+    const ans = dLine(p, ['9', ' × ', '14', ' =  ', '126'], C2_RX, 790, m('ans'), { size: 76, card: ORANGE_BG });
+    dLater(ans, [1], m('ans', .4)); dLater(ans, [2], m('ans', .77)); dLater(ans, [3, 4], m('ans', 1.76));
+    c2Ring(p, ans, 4, 4, m('ans', 1.9));                                 // on "one hundred twenty-six"
+  }],
+
+  ['mistake', 'Watch out', (m) => {
+    const p = panel(0);
+    dWatchOut(p, .3, 800, 92);
+    // "The ten is part of the top. It is not a side." — her words; on the left a small copy of the model, the 10 on top
+    dText(p, 'The 10 is part of the top.', 800, 172, m('w'), { size: 44, fill: INK });
+    dText(p, 'It is not a side.', 800, 232, m('w', 2.03), { size: 44, fill: INK });
+    const GX = 210, GY = 380;
+    const a = c2Grid(p, GX, GY, m('w', .1), 26, 50);
+    a.color(0, C2_A, m('w', .1)); a.color(1, C2_B, m('w', .1));
+    [a.side, ...a.tops].forEach(e => show(e, m('w', .1), .4));
+    dRing(p, GX + 26 * 5, GY - 36 - 17, 122, 78, m('w', .2), TEAL);
+    dNudge(a.tops[0], m('w', 1.17));
+    // "Do not add the nine and the four." — 9 + 4 = 13 in red, the 9 and the 4 popping on the model
+    const add = dLine(p, [{ t: '9', fill: RED }, { t: ' + ', fill: RED }, { t: '4', fill: RED }, { t: ' = ', fill: RED }, { t: '13', fill: RED }], 1200, 360, m('not', .8), { size: 60 });
+    dLater(add, [1, 2], m('not', 1.52)); dLater(add, [3, 4], m('not', 3.49));
+    dNudge(a.side, m('not', .8)); dNudge(a.tops[1], m('not', 1.52));
+    // "Not ten times thirteen." — the wrong model: the 10 taken for a side, 13 on top; 10 × 13 struck
+    const wx = 1050, wy = 480, ww = 300, wh = 130;
+    const box = mk('rect', { x: wx, y: wy, width: ww, height: wh, fill: RED_BG, stroke: RED, 'stroke-width': 4 }, p);
+    put(box, { o: 0 }); show(box, m('not', 2.41), .4);
+    dText(p, '10', wx - 22, wy + wh / 2 + 18, m('not', 2.83), { size: 52, fill: RED, weight: 700, anchor: 'end' });
+    dText(p, '13', wx + ww / 2, wy - 18, m('not', 3.49), { size: 52, fill: RED, weight: 700 });
+    const bad = dLine(p, [{ t: '10 × ', fill: RED }, { t: '13', fill: RED }], 1200, 730, m('not', 2.83), { size: 60, card: RED_BG });
+    dLater(bad, [1], m('not', 3.49));
+    dStrike(bad, m('not', 3.95));
+    // "Nine is the side. It is nine times fourteen." — the right way first (left): the 9 circled, 9 × 14 ✓
+    c2Circle(p, a.side, 50, m('right', .1));
+    dNudge(a.side, m('right', .71));
+    const ok = dLine(p, ['9', ' × ', '14'], GX + 182, 730, m('right', 2.05), { size: 64, card: ORANGE_BG });
+    dLater(ok, [1, 2], m('right', 2.81));
+    dTick(p, ok._card.x + ok._card.w + 44, 730 - 64 * .3, m('right', 3.1));
+  }, { minDur: 14.8 }],
+
+  ['wrap', 'Remember', rememberBeat([['Find the side.', 'w1'], ['Add the top.', 'w2'], ['Multiply.', 'w3']])],
+].map(([id, title, run, extra]) => ({ id, title, run, ...extra }));
+
+boot();
+</script>
+</body>
+</html>

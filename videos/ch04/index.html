@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Expanded form · Math Module 5</title>
+<link rel="stylesheet" href="../lib/engine.css?v=fa68c4a8">
+<link rel="expect" href="#bar" blocking="render">
+</head>
+<body>
+<script src="../lib/engine.js?v=d6885892"></script>
+<script src="../lib/mm5.js?v=8ee61e1a"></script>
+<script src="../lib/embed.js?v=3bc13d2d"></script>
+<script src="audio/en/timings.js?v=4181d565"></script>
+<script>
+'use strict';
+/* Mr. O's 4th grade · Math Module 5, Lesson 5.3: expanded form and the Distributive Property.
+   Drawn the way HIS board writes it (board notes 5.2/5.3: "Expanded form: a number written as the value of each
+   digit." · "Distributive Property: break a number apart, multiply each part, then add. 4 × 17 = (4 × 10) + (4 × 7)"),
+   in the three numbered lines of Math Module 4's "Break apart to multiply":
+     4 × 56 · 1  56 = 50 + 6 · 2  (4 × 50) + (4 × 6) · 4 × 50 = 200, 4 × 6 = 24 · 3  200 + 24 = 224
+   The 50 part is blue and the 6 part green all the way down (GROUP[0] / GROUP[1]).
+   4 × 56 is the site's own question ("Which of these uses expanded form and the Distributive Property to find 4 × 56?").
+   The traps (her words): the 5 in 56 used as 5 — (4 × 5) + (4 × 6); the 6 never multiplied — (4 × 50) + 6.
+   r2 (11/20): "That is the Distributive Property." labels line 2; the mistakes are slashed / boxed, notes in dNote. */
+const CHAPTER = { number: 4, title: 'Expanded form', minutes: 1, language: 'en' };
+
+/* HIS BOARD: the problem at the top left, then numbered lines under it, each number in a teal circle */
+const BX = 400, LX = BX + 64 * .48 + 34, PX = BX - 30;       // the circles' centre, where the lines start, the problem
+const PROB_Y = 150, L1_Y = 290, L2_Y = 410, PROD_Y = 518, L3_Y = 640, ANS_Y = 768;
+const TENS = GROUP[0], ONES = GROUP[1];
+
+// his red ring round an answer that sits in a line (piece e, baseline y): an ellipse through the digits' corners and
+// a little more, so it never cuts a digit
+const c04Ring = (p, e, y, size, t) => {
+  const a = e._w / 2, b = size * .36, rx = a + 22, ry = b / Math.sqrt(1 - (a / rx) ** 2) + 8;
+  return dRing(p, e._px, y - size * .35, rx * 2, ry * 2, t);
+};
+// where "4 ×" belongs: a red dashed box over the empty piece k of a line (like the missing top number in ch07/ch08)
+const c04Gap = (p, line, k, t) => {
+  const e = line.row[k], s = line.row.size;
+  const r = mk('rect', { x: e._px - e._w / 2 + 4, y: line.row.y - s * .86, width: e._w - 4, height: s * 1.06, rx: 8, fill: 'none', stroke: RED, 'stroke-width': 4, 'stroke-dasharray': '10 8' }, p);
+  put(r, { o: 0 }); show(r, t, .4);
+  return r;
+};
+
+const BEATS = [
+  ['intro', 'Expanded form', titleBeat('Lesson 5.3', 'Expanded form', 'Break apart. Multiply each part.')],
+
+  ['steps', 'Three steps', (m) => {
+    const p = panel(0);
+    // "Here is four times fifty-six."
+    const prob = dLine(p, ['4', ' × ', '56'], PX, PROB_Y, .3, { size: 96, card: BLUE_BG, anchor: 'start' });
+    // "Step one. Write fifty-six in expanded form. Fifty plus six."
+    const l1 = dStepLine(p, 1, ['56', ' = ', { t: '50', fill: TENS }, ' + ', { t: '6', fill: ONES }], BX, L1_Y, m('s1'), { size: 64 });
+    dLater(l1, [0, 1], m('s1', 1.73));                                        // "fifty-six"
+    dText(p, '← expanded form', LX + l1.row.w + 44, L1_Y - 6, m('s1', 2.74), { size: 40, fill: TEAL, anchor: 'start', weight: 700 });
+    dLater(l1, [2], m('ef'));                                                 // "Fifty"
+    dLater(l1, [3], m('ef', .5));                                             // "plus"
+    dLater(l1, [4], m('ef', .81));                                            // "six"
+    // "Step two. Multiply both parts by four."
+    const l2 = dStepLine(p, 2, ['(4 × ', { t: '50', fill: TENS }, ')', ' + ', '(4 × ', { t: '6', fill: ONES }, ')'], BX, L2_Y, m('s2'), { size: 64 });
+    dNudge(l1.row[2], m('s2', 2.03)); dNudge(l1.row[4], m('s2', 2.37));     // "both parts"
+    dNudge(prob.row[0], m('s2', 2.95));                                      // "by four"
+    // "That is the Distributive Property." — named beside line 2 (the site's question names it)
+    dText(p, '← Distributive Property', LX + l2.row.w + 44, L2_Y - 6, m('dp', .88), { size: 40, fill: TEAL, anchor: 'start', weight: 700 });
+    // "Four times fifty, plus four times six."
+    dLater(l2, [0], m('p'));
+    dLater(l2, [1, 2], m('p', .75));
+    dLater(l2, [3], m('p', 1.53));
+    dLater(l2, [4], m('p', 1.93));
+    dLater(l2, [5, 6], m('p', 2.56));
+    // "Step three. Add." — the circle first; the line fills in at "Two hundred plus twenty-four…"
+    const l3 = dStepLine(p, 3, [{ t: '200', fill: TENS }, ' + ', { t: '24', fill: ONES }, ' =  ', '224'], BX, L3_Y, m('s3'), { size: 64 });
+    // "Four times fifty is two hundred." — on a soft blue card under the 50's part
+    const p0 = dLine(p, ['4 × ', { t: '50', fill: TENS }, ' = ', { t: '200', fill: TENS }], LX, PROD_Y, m('a1'), { size: 56, card: GROUP_BG[0], anchor: 'start' });
+    dLater(p0, [1], m('a1', .72)); dNudge(l2.row[1], m('a1', .72));          // "fifty"
+    dLater(p0, [2], m('a1', 1.29));                                           // "is"
+    dLater(p0, [3], m('a1', 1.55));                                           // "two hundred"
+    // "Four times six is twenty-four." — beside it, on a soft green card
+    const x1 = LX + p0.row.w + 56 * 1.1 + 40;
+    const p1 = dLine(p, ['4 × ', { t: '6', fill: ONES }, ' = ', { t: '24', fill: ONES }], x1, PROD_Y, m('a2'), { size: 56, card: GROUP_BG[1], anchor: 'start' });
+    dLater(p1, [1], m('a2', .65)); dNudge(l2.row[5], m('a2', .65));          // "six"
+    dLater(p1, [2], m('a2', 1.05));                                           // "is"
+    dLater(p1, [3], m('a2', 1.25));                                           // "twenty-four"
+    // "Two hundred plus twenty-four is two hundred twenty-four." — the products come down into line 3
+    dLater(l3, [0], m('sum')); dFly(l3, [0], [p0.row[3]._px, p0.row.y], m('sum'), .8);
+    dLater(l3, [1], m('sum', .77));
+    dLater(l3, [2], m('sum', 1.05)); dFly(l3, [2], [p1.row[3]._px, p1.row.y], m('sum', 1.05), .8);
+    dLater(l3, [3], m('sum', 1.76));
+    dLater(l3, [4], m('sum', 2.12));
+    // his red ring round the answer as she says it, then the answer under his lines, lined up with the problem
+    c04Ring(p, l3.row[4], L3_Y, 64, m('sum', 2.12));
+    dLine(p, ['4 × 56 = 224'], PX, ANS_Y, m('sum', 2.7), { size: 72, card: ORANGE_BG, anchor: 'start' });
+  }],
+
+  ['mistake', 'Watch out', (m) => {
+    const p = panel(0);
+    dWatchOut(p, .3, 800, 100);
+    // the right one first, on top, ticked: his line 2 (its 50 lands on "worth fifty")
+    const r = dRight(p, ['(4 × ', { t: '50', fill: TENS }, ')', ' + ', '(4 × ', { t: '6', fill: ONES }, ')'], 770, 255, m('w', 2.16), { size: 68 });
+    // "The five in fifty-six is worth fifty. Not five." — the 5 slashed
+    dText(p, 'The 5 in 56 is worth 50.', 420, 420, m('w'), { size: 40, fill: INK });
+    const bad1 = dLine(p, ['(4 × ', { t: '5', fill: RED }, ') + (4 × 6)'], 420, 560, m('n1'), { size: 60, card: RED_BG });
+    const five = bad1.row[1];
+    dSlash(p, five._px, 560 - 60 * .36, five._w + 24, 60 * .95, m('n1', .35));  // "five"
+    dNote(p, 'Not 5.', 420, 665, m('n1', .35));
+    dNudge(r.row[1], m('n1', .6));                                            // the 50 in the right one
+    // "And multiply both parts by four. Multiply the six by four too." — the 6 left alone, its "4 ×" missing
+    dText(p, 'Multiply both parts by 4.', 1180, 420, m('b'), { size: 40, fill: INK });
+    dNudge(r.row[1], m('b', .9)); dNudge(r.row[5], m('b', 1.24));            // "both parts"
+    const bad2 = dLine(p, ['(4 × 50) + ', { t: '4 ×', fill: 'none' }, ' ', '6'], 1180, 560, m('n2'), { size: 60, card: RED_BG });
+    dNudge(bad2.row[3], m('n2', .78));                                        // "the six"
+    c04Gap(p, bad2, 1, m('n2', 1.21));                                        // "by four": where "4 ×" belongs
+    dNote(p, 'Multiply the 6 by 4 too.', 1180, 665, m('n2', .3));
+  }, { minDur: 12.8 }],
+
+  ['wrap', 'Remember', rememberBeat([['Write it in expanded form.', 'w1'], ['Multiply both parts.', 'w2'], ['Add.', 'w3']])],
+].map(([id, title, run, extra]) => ({ id, title, run, ...extra }));
+
+boot();
+</script>
+</body>
+</html>

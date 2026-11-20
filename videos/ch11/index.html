@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>How many are left? · Math Module 5</title>
+<link rel="stylesheet" href="../lib/engine.css?v=fa68c4a8">
+<link rel="expect" href="#bar" blocking="render">
+</head>
+<body>
+<script src="../lib/engine.js?v=d6885892"></script>
+<script src="../lib/mm5.js?v=8ee61e1a"></script>
+<script src="../lib/embed.js?v=3bc13d2d"></script>
+<script src="audio/en/timings.js?v=e451e935"></script>
+<script>
+'use strict';
+/* Mr. O's 4th grade · Math Module 5, Lesson 5.7: two-step word problems, "multiply first, then subtract".
+   Drawn the way HIS board writes it (Lesson 5.7 board notes 11/18–11/19: "Rosa has 5 packs…"
+     1  5 × 16 − 22 = n   2  Multiply first: 5 × 16 = 80   3  Then subtract: 80 − 22 = 58   4  n = 58 cookies
+   and "Which equation shows it? 60 − 3 × 11 = n"): the story at the top with the question underlined in red, then his
+   four numbered steps in teal circles:
+     1  Write the equation. 75 − 3 × 12 = n (blue card; "n = stickers left")   2  Multiply first: 3 × 12 = 36
+     3  Then subtract: 75 − 36 = 39                                            4  n = 39 stickers (orange, 39 ringed red)
+   "3 × 12" (the 3 pages of 12) keeps one colour, purple, all the way; a small picture of the 3 pages of 12 beside it.
+   r2 (11/20 reviews): 75 stickers; the right answer first on the mistake beat. The trap: taking away the 3 and the 12. */
+const CHAPTER = { number: 11, title: 'How many are left?', minutes: 1, language: 'en' };
+
+const C11_PUR = '#8a35d6', C11_PUR_BG = '#f1e4fd';      // the 3 pages of 12 stickers (3 × 12 and what it makes)
+const C11_SX = 330;                                       // his numbered steps: the teal circles' x
+const C11_TX = C11_SX + 56 * .48 + 34;                    // where a step's words start
+
+/* The story on a blue card (BLUE = the problem), each word as Ava reads it; the question on its own line, underlined
+   in red at tU. times = when each word is said (beat seconds). Returns { g, card, words, q }. */
+const c11Story = (p, statement, question, times, t0, tU, colours) => {
+  const size = 56, lead = 1.3, x = 150, y = 340, w = 1300;
+  const g = G(p, { o: 0 });
+  show(g, t0, .5);
+  const cardRect = mk('rect', { rx: 30, fill: BLUE_BG, stroke: '#b9cbf0', 'stroke-width': 3 }, g);
+  const a = dStory(g, statement, x, y, t0, { w, size, lead });
+  const q = dStory(g, question, x, a.bottom + size * lead, t0, { w, size, lead });
+  const words = [...a.words, ...q.words];
+  words.forEach((o, k) => { put(o.e, { o: 0 }); show(o.e, times[k], .3); });
+  // the numbers bold, in their colour
+  colours.forEach(([wd, fill]) => { const e = a.word(wd); if (e) { e.setAttribute('fill', fill); if (/\d/.test(wd)) e.setAttribute('font-weight', 700); } });
+  q.underline(tU);
+  const card = { x: x - 40, y: y - size - 26, w: w + 80, h: q.bottom - y + size + 26 + size * .45 + 26 };
+  Object.entries({ x: card.x, y: card.y, width: card.w, height: card.h }).forEach(([k, v]) => cardRect.setAttribute(k, v));
+  return { g, card, words, q };
+};
+// the story shrinks to the top of the board (kids can look back at it while the steps are worked)
+const c11StoryUp = (s, t0, k = .72, top = 22) => {
+  const left = (1600 - s.card.w * k) / 2;
+  tw(s.g, { x: left - s.card.x * k, y: top - s.card.y * k, s: k }, t0, .8);
+};
+// her words as a line of plain text, each piece shown when she says it: pieces = [[str, t, fill?], …], centred on x
+const c11Say = (p, pieces, x, y, { size = 46, fill = INK, weight = 600 } = {}) => {
+  ctx2d.font = `${weight} ${size}px ${UI}`;
+  const ws = pieces.map(([s]) => ctx2d.measureText(s).width);
+  let cx = x - ws.reduce((a, b) => a + b, 0) / 2;
+  return pieces.map(([s, t, f], k) => {
+    const e = T(p, s, { x: cx, y, size, fill: f || fill, weight, o: 0 });
+    show(e, t, .4);
+    cx += ws[k];
+    return e;
+  });
+};
+// the 3 pages, each with 12 stickers (3 across, 4 down): pages pop in from t0, the stickers land at t1
+const c11Pages = (p, x0, y0, t0, t1) => {
+  const pw = 100, ph = 134, gap = 18;
+  [0, 1, 2].forEach(k => {
+    const g = G(p, { x: x0 + k * (pw + gap) + pw / 2, y: y0 + ph / 2, o: 0, s: .6 });
+    mk('rect', { x: -pw / 2, y: -ph / 2, width: pw, height: ph, rx: 10, fill: '#ffffff', stroke: C11_PUR, 'stroke-width': 3.5 }, g);
+    tw(g, { o: 1, s: 1 }, t0 + k * .15, .4, back);
+    for (let i = 0; i < 12; i++) {
+      const c = mk('circle', { cx: -26 + (i % 3) * 26, cy: -42 + Math.floor(i / 3) * 28, r: 10, fill: C11_PUR }, g);
+      put(c, { o: 0 }); show(c, t1 + k * .12 + i * .015, .25);
+    }
+  });
+};
+
+// a red cross-out drawn on at t0 through pieces i..j of a line, rising left to right (a level strike over "− 3 − 12"
+// ran just above the minus bars and read as "80 = 3 = 12")
+const c11Cross = (line, i, j, t0) => {
+  const row = line.row, sz = row.size;
+  const a = row[i]._px - row[i]._w / 2 + 4, b = row[j]._px + row[j]._w / 2 + 6;
+  const s = path(line, `M${a} ${row.y + sz * .1}L${b} ${row.y - sz * .88}`, { stroke: RED, 'stroke-width': 7, 'stroke-linecap': 'round', fill: 'none' }, { d: 0 });
+  draw(s, t0, .4);
+  return s;
+};
+
+// his red ring round the answer, drawn on at t0 around piece k of a line: an ellipse that holds the digits' whole box
+// (corners inside: (w0/w)² + (h0/h)² < 1), so it never cuts a digit
+const c11Ring = (p, line, k, t0, bold = false) => {
+  // a bold number is wider than its measured width; narrow and tall, it clears the = and the word beside it
+  const e = line.row[k], sz = line.row.size, w0 = e._w * (bold ? 1.12 : 1) + (bold ? 10 : 4), h0 = sz * .72;
+  return dRing(p, e._px, line.row.y - sz * .36, w0 / .82, h0 / .57, t0, RED);
+};
+
+const BEATS = [
+  ['intro', 'How many are left?', titleBeat('Lesson 5.7', 'How many are left?', 'Multiply first. Then subtract.')],
+
+  ['story', 'Read along', (m) => {
+    const p = panel(0);
+    const at = (k, t) => m(k, t - TIMINGS.story.marks[k]);
+    // "Lee has seventy-five stickers. He fills three pages. Each page has twelve stickers. How many stickers are left?"
+    const times = [1.385, 1.655, 1.897, 2.649, 3.715, 3.956, 4.397, 4.752, 5.931, 6.300, 6.712, 6.968, 7.351,
+      8.416, 8.672, 8.942, 9.439, 9.581].map(t => at('r', t));
+    // "Underline the question." — the red line under the question as she says "question"
+    S.story = c11Story(p, 'Lee has 75 stickers. He fills 3 pages. Each page has 12 stickers.', 'How many stickers are left?',
+      times, .3, at('u', 11.19), [['75', INK], ['3', C11_PUR], ['12', C11_PUR]]);
+  }],
+
+  ['steps', 'Multiply, then subtract', (m) => {
+    const p = S.panel;
+    const at = (k, t) => m(k, t - TIMINGS.steps.marks[k]);
+    c11StoryUp(S.story, .1);
+    const badge = (n, y, t) => dBadge(p, n, C11_SX, y - 56 * .34, t, { r: 56 * .48 });
+    // "Step one. Write the equation. Seventy-five minus three times twelve equals n." — each part as she says it
+    badge(1, 310, m('s1'));
+    dLine(p, ['Write the equation.'], C11_TX, 310, at('s1', 1.47), { size: 56, anchor: 'start' });
+    const eq = dLine(p, ['75', ' − ', { t: '3', fill: C11_PUR }, { t: ' × ', fill: C11_PUR }, { t: '12', fill: C11_PUR }, ' = ', 'n'],
+      C11_TX + 10, 412, m('eq'), { size: 66, anchor: 'start', card: BLUE_BG });
+    dLater(eq, [1], at('eq', 4.03));
+    dLater(eq, [2], at('eq', 4.55));
+    dLater(eq, [3], at('eq', 4.81));
+    dLater(eq, [4], at('eq', 5.31));
+    dLater(eq, [5], at('eq', 5.68));
+    dLater(eq, [6], at('eq', 6.09));
+    // "n is the stickers left." — his label beside the equation
+    const lab = dLine(p, ['n', ' = ', 'stickers', ' left'], eq._card.x + eq._card.w + 34, 412, m('nn'), { size: 46, anchor: 'start' });
+    dLater(lab, [1], at('nn', 7.28));
+    dLater(lab, [2], at('nn', 7.59));
+    dLater(lab, [3], at('nn', 8.16));
+    dNudge(eq.row[6], m('nn', .05));
+    // the 3 pages of 12 stickers ("three … twelve"), beside steps 2 and 3
+    c11Pages(p, 1180, 470, at('eq', 4.55), at('eq', 5.31));
+    // "Step two. Multiply first. Three times twelve is thirty-six."
+    badge(2, 528, m('s2'));
+    const mul = dLine(p, ['Multiply first: ', { t: '3', fill: C11_PUR }, { t: ' × ', fill: C11_PUR }, { t: '12', fill: C11_PUR }, ' = ', { t: '36', fill: C11_PUR }],
+      C11_TX, 528, at('s2', 10.43), { size: 56, anchor: 'start' });
+    dLater(mul, [1], m('m'));
+    dLater(mul, [2], at('m', 12.49));
+    dLater(mul, [3], at('m', 12.83));
+    dLater(mul, [4, 5], at('m', 13.43));
+    [2, 3, 4].forEach((k, j) => dNudge(eq.row[k], m('m', .05 + j * .05)));
+    // "Step three. Then subtract. Seventy-five minus thirty-six is thirty-nine."
+    badge(3, 632, m('s3'));
+    const sub = dLine(p, ['Then subtract: ', '75', ' − ', { t: '36', fill: C11_PUR }, ' = ', '39'], C11_TX, 632, at('s3', 16.30), { size: 56, anchor: 'start' });
+    dLater(sub, [1], m('sb'));
+    dLater(sub, [2], at('sb', 18.74));
+    dLater(sub, [3], at('sb', 19.18));
+    dLater(sub, [4, 5], at('sb', 20.38));
+    // "Step four. n equals thirty-nine stickers." — the answer, orange, the 39 ringed in red as she says it
+    badge(4, 752, m('s4'));
+    const ans = dLine(p, [{ t: 'n', fill: ORANGE }, { t: ' =  ', fill: ORANGE }, { t: '39', fill: ORANGE }, { t: '  stickers', fill: ORANGE }],
+      C11_TX + 10, 752, m('n'), { size: 64, anchor: 'start', card: ORANGE_BG });
+    ans.row[2].querySelectorAll('text').forEach(e => e.setAttribute('font-weight', 700));   // the number bold
+    dLater(ans, [1], at('n', 23.47));
+    dLater(ans, [2], at('n', 24.06));
+    c11Ring(p, ans, 2, at('n', 24.1), true);
+    dLater(ans, [3], at('n', 24.84));
+  }],
+
+  ['mistake', 'Watch out', (m) => {
+    const p = panel(0);
+    const at = (k, t) => m(k, t - TIMINGS.mistake.marks[k]);
+    dWatchOut(p, .3, 800, 100);
+    // "Three pages of twelve is three times twelve." — her words, each number as she says it; then, on top, the right
+    // equation with a green ✓
+    c11Say(p, [['3', m('w'), C11_PUR], [' pages of ', at('w', 1.67)], ['12', at('w', 2.24), C11_PUR], [' is ', at('w', 2.75)],
+      ['3', at('w', 2.95), C11_PUR], [' × ', at('w', 3.29), C11_PUR], ['12', at('w', 3.67), C11_PUR], ['.', at('w', 3.67)]], 800, 190, { size: 50 });
+    dRight(p, ['75', ' − ', { t: '3 × 12', fill: C11_PUR }, ' = ', 'n'], 760, 335, at('w', 3.95), { size: 72 });
+    // "Do not take away the three and the twelve." — the red note (dNote's look: 44 px bold red), each number as she says it
+    c11Say(p, [['Do not take away the ', m('not')], ['3', at('not', 5.73)], [' and the ', at('not', 6.34)], ['12', at('not', 6.58)], ['.', at('not', 6.58)]],
+      760, 668, { size: 44, fill: RED, weight: 700 });
+    // "Not seventy-five minus three minus twelve." — below: the wrong equation as she says it, "− 3 − 12" crossed out
+    const bad = dLine(p, ['75', { t: ' − ', fill: RED }, { t: '3', fill: RED }, { t: ' − ', fill: RED }, { t: '12', fill: RED }, ' = ', 'n'], 760, 545, at('not', 7.98), { size: 72, card: RED_BG });
+    dLater(bad, [1], at('not', 8.76));
+    dLater(bad, [2], at('not', 9.40));
+    dLater(bad, [3], at('not', 9.70));
+    dLater(bad, [4], at('not', 10.14));
+    dLater(bad, [5, 6], at('not', 10.40));
+    c11Cross(bad, 1, 4, at('not', 10.6));
+  }, { minDur: 13.6 }],
+
+  ['wrap', 'Remember', rememberBeat([['Underline the question.', 'w1'], ['Multiply first.', 'w2'], ['Then subtract.', 'w3']])],
+].map(([id, title, run, extra]) => ({ id, title, run, ...extra }));
+
+boot();
+</script>
+</body>
+</html>

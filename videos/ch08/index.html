@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The short way: big numbers · Math Module 5</title>
+<link rel="stylesheet" href="../lib/engine.css?v=fa68c4a8">
+<link rel="expect" href="#bar" blocking="render">
+</head>
+<body>
+<script src="../lib/engine.js?v=d6885892"></script>
+<script src="../lib/mm5.js?v=8ee61e1a"></script>
+<script src="../lib/embed.js?v=3bc13d2d"></script>
+<script src="audio/en/timings.js?v=78393737"></script>
+<script>
+'use strict';
+/* Mr. O's 4th grade · Math Module 5, Lesson 5.6: the short way with a 3-digit number.
+   Drawn the way HIS board writes it (Lesson 5.6 board notes p4, "4 × 268": 1 4 × 8 = 32 · 2 4 × 6 = 24, + 3 = 27 ·
+   3 4 × 2 = 8, + 2 = 10, the tops in orange over the places, the answer ringed), built like the 2-digit chapter (ch07):
+   the big number on top, × and the 1-digit number circled in blue, a line, the answer ringed in red, the regrouped
+   numbers small on top in orange; beside it his numbered steps in his short form:
+     1  3 × 6 = 18. Write 8. Put 1 on top.   2  3 × 8 = 24, + 1 = 25. Write 5. Put 2 on top.
+     3  3 × 3 = 9, + 2 = 11. It is the last place. Write 11.
+   386 × 3 = 1,158. The trap (her words): the last top forgotten — 958.
+   r2 (11/20, Video Director): no empty 4-box frame; "Big numbers just have more places. Do the same steps in each
+   place." light up the real work's places, ones → tens → hundreds. */
+const CHAPTER = { number: 8, title: 'The short way: big numbers', minutes: 1, language: 'en' };
+
+const OX = 540, NY = 330;              // the ones column of his work, the big number's baseline
+const SZ = 104, COLW = 88;             // its digit size and column width
+const SX = 720;                        // his numbered steps start here
+const WORDS_X = SX + 56 * .48 + 34;    // where a step's words start, under its fact
+const ST_Y = [260, 440, 620];          // the facts' baselines; the words go 75 under each
+const PLACE_BG = [GROUP_BG[1], GROUP_BG[0], GROUP_BG[2]];   // ones, tens, hundreds (ones green, tens blue, as in ch06)
+
+// his words under a step: "Write 8." then, in orange, "Put 1 on top." beside it
+const c08Words = (p, y, write, tW, top, tT) => {
+  const w = dLine(p, [write], WORDS_X, y, tW, { size: 42, anchor: 'start' });
+  if (top) dLine(p, [{ t: top, fill: ORANGE }], WORDS_X + w.row.w + 30, y, tT, { size: 42, anchor: 'start' });
+  return w;
+};
+// his red ring round the answer: lower and wider than the kit's, so it clears the line under the × and never cuts a
+// digit (the kit's 11/20 ring, size × 1.1 tall, clips the corners of a 4-digit answer)
+const c08Ring = (p, v, places, t) => dRing(p, v.cx(0) - (places - 1) * v.col / 2, v.rowY[2] - v.size * .29, places * v.col + v.size, v.size * 1.21, t, RED);
+// a soft strip behind place i of the work (from above the tops to under the answer), popping in at t
+const c08Place = (p, v, i, t) => {
+  const top = v.rowY[0] - v.size * 1.62, bottom = v.rowY[2] + v.size * .3;
+  const r = mk('rect', { x: v.cx(i) - v.col * .46, y: top, width: v.col * .92, height: bottom - top, rx: 18, fill: PLACE_BG[i] }, p);
+  p.insertBefore(r, p.firstChild);
+  put(r, { o: 0 }); show(r, t, .4);
+  return r;
+};
+
+const BEATS = [
+  ['intro', 'The short way: big numbers', titleBeat('Lesson 5.6', 'The short way: big numbers', 'Multiply a three-digit number.')],
+
+  ['steps', 'Start with the ones', (m) => {
+    const p = panel(0);
+    // "Here is three hundred eighty-six times three." — the problem as he heads the board, and his work under it
+    dLine(p, ['386 × 3'], 1130, 140, .3, { size: 76, card: BLUE_BG });
+    const v = S.v = dVMult(p, 3, 386, OX, NY, .3, { size: SZ, col: COLW, ansPlaces: 4, circleT: m('c', 1.1) });   // "Circle the three on the bottom."
+    const sp = S.steps = G(p);                                                // his steps, together (the answer beat clears them)
+    // "Start with the ones." — his red arrow over the work, then the 6 and the 3 pop
+    dLeftArrow(p, OX - 290, OX + 40, NY - 190, m('s1', .1));
+    v.hl(0, m('s1', .75));
+    // "Three times six is eighteen."
+    const l1 = dStepLine(sp, 1, ['3 × 6', ' = ', '18'], SX, ST_Y[0], m('m1'), { size: 56 });
+    dLater(l1, [1, 2], m('m1', 1.25));
+    // "Write the eight. Put the one on top."
+    c08Words(sp, ST_Y[0] + 75, 'Write 8.', m('w1', .3), 'Put 1 on top.', m('t1', .3));
+    v.ans(0, '8', m('w1', .5));
+    const top1 = v.top(1, 1, m('t1', .36));
+    // "Next, the tens. Three times eight is twenty-four. Plus one is twenty-five."
+    v.hl(1, m('s2', .67));
+    const l2 = dStepLine(sp, 2, ['3 × 8', ' = ', '24', ', + ', { t: '1', fill: ORANGE }, ' = ', '25'], SX, ST_Y[1], m('m2'), { size: 56 });
+    dLater(l2, [1, 2], m('m2', 1.34));
+    dLater(l2, [3, 4], m('a2', .38)); dNudge(top1, m('a2', .38));            // "Plus one" — the 1 on top pops
+    dLater(l2, [5, 6], m('a2', .88));                                         // "is twenty-five"
+    // "Write the five. Put the two on top."
+    c08Words(sp, ST_Y[1] + 75, 'Write 5.', m('w2', .3), 'Put 2 on top.', m('t2', .3));
+    v.ans(1, '5', m('w2', .5));
+    const top2 = v.top(2, 2, m('t2', .35));
+    // "Next, the hundreds. Three times three is nine. Plus two is eleven."
+    v.hl(2, m('s3', .75));
+    const l3 = dStepLine(sp, 3, ['3 × 3', ' = ', '9', ', + ', { t: '2', fill: ORANGE }, ' = ', '11'], SX, ST_Y[2], m('m3'), { size: 56 });
+    dLater(l3, [1, 2], m('m3', 1.33));
+    dLater(l3, [3, 4], m('a3', .4)); dNudge(top2, m('a3', .4));              // "Plus two"
+    dLater(l3, [5, 6], m('a3', .85));                                         // "is eleven"
+    // "It is the last place. Write eleven." — the hundreds pop; 11 fills the hundreds and the new thousands place
+    const w3 = dLine(sp, ['It is the last place.', '  Write 11.'], WORDS_X, ST_Y[2] + 75, m('w3', .2), { size: 42, anchor: 'start' });
+    dLater(w3, [1], m('w3', 1.76));
+    dNudge(v.n[2], m('w3', .5));                                              // "the last place"
+    v.ans(2, '11', m('w3', 2.16));
+  }],
+
+  ['answer', 'The answer', (m) => {
+    const p = S.panel, v = S.v;
+    // "So three hundred eighty-six times three is one thousand, one hundred fifty-eight." — the ring as she says it,
+    // and the answer line under his work
+    c08Ring(p, v, 4, m('a', 2.95));
+    const ans = dLine(p, ['386 × 3 = ', '1,158'], 400, 760, m('a', .5), { size: 58, card: ORANGE_BG });
+    dLater(ans, [1], m('a', 2.95));
+    // "Big numbers just have more places." — his steps make room; the work's places light up, ones → tens → hundreds
+    hide(S.steps, m('four', -.25), .4);
+    dText(p, 'Big numbers just have more places.', 1110, 340, m('four'), { size: 44, fill: INK });
+    [0, 1, 2].forEach(i => c08Place(p, v, i, m('four', 1.28 + i * .3)));    // "more places"
+    // "Do the same steps in each place." — each place pops in turn, ones first
+    dText(p, 'Do the same steps in each place.', 1110, 460, m('same'), { size: 44, fill: TEAL, weight: 800 });
+    [0, 1, 2].forEach(i => {
+      const t = m('same', 1.2 + i * .35);                                     // "in each place"
+      dNudge(v.n[i], t);
+      if (v.ansEls[i]) dNudge(v.ansEls[i], t + .05);
+    });
+  }],
+
+  ['mistake', 'Watch out', (m) => {
+    const p = panel(0);
+    dWatchOut(p, .3, 800, 92);
+    // "Add every number on top. The last one too." — her words, then the right work on the left, tops first
+    dText(p, 'Add every number on top. The last one too.', 800, 168, m('w'), { size: 42, fill: INK });
+    const RX = 620, BX = 1270, Y = 390, MS = 84, MC = 72;
+    const r = dVMult(p, 3, 386, RX, Y, m('w', .3), { size: MS, col: MC, ansPlaces: 4 });
+    const t1 = r.top(1, 1, m('w', .6)), t2 = r.top(2, 2, m('w', .7));
+    dNudge(t1, m('w', 1.12)); dNudge(t2, m('w', 1.2));                        // "on top"
+    dNudge(t2, m('w', 2.3));                                                  // "The last one too."
+    // "Do not forget the two. Not nine hundred fifty-eight." — the same work with the last top missing
+    const bad = dVMult(p, 3, 386, BX, Y, m('not', .1), { size: MS, col: MC, ansPlaces: 4 });
+    bad.top(1, 1, m('not', .1));
+    const miss = mk('rect', { x: BX - 2 * MC - 30, y: Y - MS - 52, width: 60, height: 62, rx: 8, fill: 'none', stroke: RED, 'stroke-width': 4, 'stroke-dasharray': '10 8' }, p);
+    put(miss, { o: 0 }); show(miss, m('not', .98), .4);                     // where the 2 should be: "the two"
+    bad.ans(0, '958', m('not', 2.22)).forEach(e => put(e, { c_fill: RED }));  // "nine hundred fifty-eight"
+    dSlash(p, BX - MC, bad.rowY[2] - MS * .36, 3 * MC + 30, MS * .95, m('not', 3.1));
+    dNote(p, 'Do not forget the 2.', BX - MC, 740, m('not', .2));
+    // "It is one thousand, one hundred fifty-eight." — the right answer as she says it, then the ✓ (no ring here)
+    r.ans(3, '1', m('right', .38)); r.ans(2, '1', m('right', 1.56));
+    r.ans(1, '5', m('right', 2.34)); r.ans(0, '8', m('right', 2.46));
+    dTick(p, RX + 96, r.rowY[2] - 18, m('right', 2.6));
+  }, { minDur: 14.6 }],
+
+  ['wrap', 'Remember', rememberBeat([['Start with the ones.', 'w1'], ['Put the extra on top.', 'w2'], ['Do the same steps in each place.', 'w3']])],
+].map(([id, title, run, extra]) => ({ id, title, run, ...extra }));
+
+boot();
+</script>
+</body>
+</html>
