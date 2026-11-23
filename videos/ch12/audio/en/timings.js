@@ -122,13 +122,13 @@ window.TIMINGS = {
   ]
  },
  "mistake": {
-  "dur": 21.36,
+  "dur": 21.144,
   "marks": {
    "w": 1.328,
-   "eq": 6.101,
-   "still": 9.539,
-   "ad": 13.786,
-   "not": 17.82
+   "eq": 5.888,
+   "still": 9.326,
+   "ad": 13.573,
+   "not": 17.607
   },
   "cues": [
    [
@@ -137,38 +137,38 @@ window.TIMINGS = {
    ],
    [
     1.328,
-    "Find the times sign."
+    "Find the times."
    ],
    [
-    3.076,
+    2.862,
     "Do it first, even when it comes second."
    ],
    [
-    6.101,
+    5.888,
     "Nine plus two times forty-four equals n."
    ],
    [
-    9.539,
+    9.326,
     "Multiply first."
    ],
    [
-    11.186,
+    10.973,
     "Two times forty-four is eighty-eight."
    ],
    [
-    13.786,
+    13.573,
     "Then add."
    ],
    [
-    14.837,
+    14.624,
     "Nine plus eighty-eight is ninety-seven."
    ],
    [
-    17.82,
+    17.607,
     "Do not add first."
    ],
    [
-    19.51,
+    19.297,
     "Not nine plus two."
    ]
   ]

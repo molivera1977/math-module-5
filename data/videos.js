@@ -10,7 +10,7 @@
      · Practice: 🎬 Show me beside every hint, and 🎬 Watch how after a wrong answer. Never on their own.
 ═══════════════════════════════════════════════════════ */
 window.MM4_VIDEOS = {
-  version: '61f4c72e',     // goes on every video address: a new number when a video changes (Cloudflare keeps files 4 h)
+  version: '02b0088b',     // goes on every video address: a new number when a video changes (Cloudflare keeps files 4 h)
   titles: {
     1: 'Base-ten blocks', 2: 'Area model: the equation', 3: 'Area model: the boxes', 4: 'Expanded form',
     5: 'Multiply by parts', 6: 'Partial products', 7: 'The short way', 8: 'The short way: big numbers',

@@ -11,7 +11,7 @@
 <script src="../lib/engine.js?v=d6885892"></script>
 <script src="../lib/mm5.js?v=a0ee7da4"></script>
 <script src="../lib/embed.js?v=3bc13d2d"></script>
-<script src="audio/en/timings.js?v=9ea6a5b9"></script>
+<script src="audio/en/timings.js?v=ef3ef03d"></script>
 <script>
 'use strict';
 /* Mr. O's 4th grade · Math Module 5, Lesson 5.7: two-step word problems, "multiply first, then add" (11/23, his
@@ -22,7 +22,7 @@
      3  Then add ("Do not stop at 88."): 88 + 9 = 97                             4  n = 97 beads (orange, 97 ringed red)
    "2 × 44" (the 2 jars of 44) keeps one colour, purple, all the way; a small picture of the 2 jars and the 9 beads.
    Watch out = his classwork Part 2 "The × Comes Second": "Find the ×. Do it first, even when it comes second."
-   9 + 2 × 44 = n → Multiply first: 2 × 44 = 88 → Then add: 9 + 88 = 97; the trap, adding first (9 + 2), crossed out.
+   (Ava: "Find the times." — r4, Whisper heard "times sign" as "time sign") 9 + 2 × 44 = n → Multiply first: 2 × 44 = 88 → Then add: 9 + 88 = 97; the trap, adding first (9 + 2), crossed out.
    Remember = his classwork Part 3 steps. Numbers: math-module-5/tools/check_videos.js (none real, none on his sheets,
    none the site's; nothing said, the story's own numbers included, is a choice at 6, 13 or the Warm-Up card; nothing
    crossed out is a key there). r3 (11/23 Math Coach, reading specialist, Video Director): 43 → 44 (43 is a key at
@@ -176,18 +176,19 @@ const BEATS = [
     const p = panel(0);
     const at = (k, t) => m(k, t - TIMINGS.mistake.marks[k]);
     dWatchOut(p, .3, 800, 100);
-    // "Find the times sign. Do it first, even when it comes second." — his classwork Part 2, word for word (r3)
-    c12Say(p, [['Find the ', m('w')], ['×', at('w', 1.83), C12_PUR], ['.', at('w', 2.18)], [' Do it first,', at('w', 3.08)], [' even when it comes second.', at('w', 4.21)]],
+    // "Find the times. Do it first, even when it comes second." — his classwork Part 2 read aloud, word for word ("Find
+    // the ×."). r4 (11/23 Whisper on the live clip): "times sign" was heard "time sign" 3 of 3; "Find the times." 4 of 4 right
+    c12Say(p, [['Find the ', m('w')], ['×', at('w', 1.81), C12_PUR], ['.', at('w', 1.81)], [' Do it first,', at('w', 2.86)], [' even when it comes second.', at('w', 4.00)]],
       800, 190, { size: 44 });
     // "Nine plus two times forty-four equals n." — the equation, each part as she says it
     const eq = dLine(p, [{ t: '9', fill: TEAL }, ' + ', { t: '2', fill: C12_PUR }, { t: ' × ', fill: C12_PUR }, { t: '44', fill: C12_PUR }, ' = ', 'n'],
       800, 320, m('eq'), { size: 72, card: BLUE_BG });
-    dLater(eq, [1], at('eq', 6.57));
-    dLater(eq, [2], at('eq', 6.95));
-    dLater(eq, [3], at('eq', 7.22));
-    dLater(eq, [4], at('eq', 7.72));
-    dLater(eq, [5], at('eq', 8.42));
-    dLater(eq, [6], at('eq', 8.84));
+    dLater(eq, [1], at('eq', 6.36));
+    dLater(eq, [2], at('eq', 6.74));
+    dLater(eq, [3], at('eq', 7.01));
+    dLater(eq, [4], at('eq', 7.51));
+    dLater(eq, [5], at('eq', 8.20));
+    dLater(eq, [6], at('eq', 8.63));
     // his numbered steps in teal circles, labelled as his page labels them (r1: a plain "1" / "2" in front read as
     // "12 × 43"; r3: "Multiply first:" / "Then add:", the words Ava says)
     const WX = 470;
@@ -195,27 +196,27 @@ const BEATS = [
     dBadge(p, 1, WX - 80, 450 - 60 * .34, m('still'), { r: 60 * .48 });
     const s1 = dLine(p, ['Multiply first: ', { t: '2', fill: C12_PUR }, { t: ' × ', fill: C12_PUR }, { t: '44', fill: C12_PUR }, ' = ', { t: '88', fill: C12_PUR }],
       WX, 450, m('still'), { size: 60, anchor: 'start' });
-    dLater(s1, [1], at('still', 11.19));
-    dLater(s1, [2], at('still', 11.48));
-    dLater(s1, [3], at('still', 11.91));
-    dLater(s1, [4, 5], at('still', 12.85));
-    [[2, 11.19], [3, 11.48], [4, 11.91]].forEach(([k, t]) => dNudge(eq.row[k], at('still', t)));
+    dLater(s1, [1], at('still', 10.97));
+    dLater(s1, [2], at('still', 11.27));
+    dLater(s1, [3], at('still', 11.70));
+    dLater(s1, [4, 5], at('still', 12.64));
+    [[2, 10.97], [3, 11.27], [4, 11.70]].forEach(([k, t]) => dNudge(eq.row[k], at('still', t)));
     // "Then add. Nine plus eighty-eight is ninety-seven." — the ✓ only once the 97 is there (Video Director r3)
     dBadge(p, 2, WX - 80, 560 - 60 * .34, m('ad'), { r: 60 * .48 });
     const s2 = dLine(p, ['Then add: ', { t: '9', fill: TEAL }, ' + ', { t: '88', fill: C12_PUR }, ' = ', { t: '97', fill: ORANGE }], WX, 560, m('ad'), { size: 60, anchor: 'start', card: ORANGE_BG });
-    dLater(s2, [1], at('ad', 14.84));
-    dLater(s2, [2], at('ad', 15.23));
-    dLater(s2, [3], at('ad', 15.62));
-    dLater(s2, [4, 5], at('ad', 16.44));
-    dTick(p, s2._card.x + s2._card.w + 44, 560 - 60 * .3, at('ad', 16.84));
+    dLater(s2, [1], at('ad', 14.62));
+    dLater(s2, [2], at('ad', 15.02));
+    dLater(s2, [3], at('ad', 15.41));
+    dLater(s2, [4, 5], at('ad', 16.23));
+    dTick(p, s2._card.x + s2._card.w + 44, 560 - 60 * .3, at('ad', 16.63));
     // "Do not add first. Not nine plus two." — the red note, then "9 + 2" on a red card, crossed out
     c12Say(p, [['Do not add first.', m('not')]], 800, 688, { size: 44, fill: RED, weight: 700 });
-    const bad = dLine(p, [{ t: '9', fill: RED }, { t: ' + ', fill: RED }, { t: '2', fill: RED }], 800, 800, at('not', 19.51), { size: 64, card: RED_BG });
-    dLater(bad, [0], at('not', 19.88));
-    dLater(bad, [1], at('not', 20.18));
-    dLater(bad, [2], at('not', 20.52));
-    c12Cross(bad, 0, 2, at('not', 20.75));
-  }, { minDur: 23.8 }],          // the full board held 2.6 s after the cross-out, as video 11 holds it
+    const bad = dLine(p, [{ t: '9', fill: RED }, { t: ' + ', fill: RED }, { t: '2', fill: RED }], 800, 800, at('not', 19.30), { size: 64, card: RED_BG });
+    dLater(bad, [0], at('not', 19.67));
+    dLater(bad, [1], at('not', 19.96));
+    dLater(bad, [2], at('not', 20.31));
+    c12Cross(bad, 0, 2, at('not', 20.54));
+  }, { minDur: 23.6 }],          // the full board held 2.6 s after the cross-out, as video 11 holds it
 
   // his classwork Part 3 steps; no purple row (purple = the 2 jars here) — blue, green, sky, slate
   ['wrap', 'Remember', rememberBeat([['Underline the question.', 'w1'], ['Write the equation.', 'w2'], ['Multiply first.', 'w3'], ['Then add.', 'w4']], { rows: [0, 1, 6, 8] })],
