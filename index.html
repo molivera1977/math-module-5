@@ -325,7 +325,7 @@
     <!-- Which part this is, big enough to read from across the room (Marcos 10/8) -->
     <div id="part-banner" class="part-banner" role="status"></div>
     <!-- "Try one like it" — shown only on the extra question that follows a miss in a review -->
-    <div id="twin-note" class="twin-note hidden" role="status">🔁 <strong>Try one like it.</strong> This one does not change your score.</div>
+    <div id="twin-note" class="twin-note hidden" role="status">🔁 <strong>Try one like it<span id="twin-no"></span>.</strong> This one does not change your score.</div>
     <div class="q-badge">
       <span class="q-badge-pill" id="progress-text">Question 1 of 17</span>
       <span class="score-badge" id="score-text">Score: 0</span>
@@ -517,7 +517,7 @@
 <script src="form-label.js?v=02d43623"></script>
 <!-- the recorded voice = Ava (Marcos 11/13: "let's use Ava"): every line the site can say, made ahead (site-tests mm5-kokoro.spec.js
      → kokoro-voice/make_ava_kokoro.py); kokoro-voice.js plays them in place of the device voice. Before next-waits.js, which listens to it. -->
-<script src="kokoro/lines.js?v=46520b1b"></script>
+<script src="kokoro/lines.js?v=9c4513e1"></script>
 <script src="kokoro-voice.js?v=051c4564"></script>
 <script src="next-waits.js?v=7afc611d" data-hold='#next-btn, #lc-next'></script>
 <script src="data/form_w.js?v=36657a19"></script>
@@ -527,6 +527,7 @@
 <script src="data/form_u.js?v=af486e54"></script>
 <script src="data/twin_x.js?v=201d504b"></script>
 <script src="data/twin_y.js?v=fb4a2e10"></script>
+<script src="data/twin_more.js?v=6e5d4e7d"></script>
 <script src="data/words.js?v=e5eaf635"></script>
 <script src="data/skills.js?v=56e5f609"></script>
 <script src="data/slides.js?v=868c0e29"></script>
@@ -537,6 +538,6 @@
      kokoro-voice.js (video.js stops a video when the site speaks), before script.js (which uses them). -->
 <script src="data/videos.js?v=68f09494"></script>
 <script src="video.js?v=fd275369"></script>
-<script src="script.js?v=a806af1b"></script>
+<script src="script.js?v=2a2cf3ab"></script>
 </body>
 </html>

@@ -97,8 +97,10 @@ const scoredCount = bank => (bank || []).filter(isScored).length;
 // Word help (a button per math word) is a support, so it comes off one step before the test:
 // Practice A and Practice B have it; the Review and the Test do not (Marcos 10/10).
 const wordHelp = form => form === 'W' || form === 'P';
-// "Try one like it": after a miss in a review, one more question of the same kind from this bank
-const TWINS = { P: 'X', B: 'Y' };   // X after a Practice miss (hints), Y after a Review miss
+// "Try one like it": after EVERY miss on the Warm-Up, the Practice and the Review, TWO more questions of the same kind
+// (Marcos 11/22: "Every wrong answer should get 2 follow ups in warm up especially and practice and review").
+// Warm-Up J then K · Practice X then G (hints) · Review Y then Q. The Test has none. They never change the score.
+const TWINS = { W: ['J', 'K'], P: ['X', 'G'], B: ['Y', 'Q'] };
 const FORM_NAMES = { W: 'Warm-Up', P: 'Practice', B: 'Review', T: 'Test', U: 'Test (Retake)' };
 function formOpen(form) {
   return SHARE_MODE || (isWarmUp(form) ? WARM_UP_OPEN : isPractice(form) ? PRACTICE_A_OPEN : form === 'B' ? REVIEW_OPEN : TEST_OPEN && atSchoolNow());
@@ -1438,7 +1440,7 @@ const app = {
     if (this.nextInterval) { clearInterval(this.nextInterval); this.nextInterval = null; }
     if (this.readInterval) { clearInterval(this.readInterval); this.readInterval = null; }
     if (document.getElementById('quiz-screen').classList.contains('hidden')) this.show('quiz-screen');
-    this.twin = null;
+    this.twin = null; this.twinQueue = [];
     this.currentIndex = k;
     this.renderQuestion();
   },
@@ -1461,15 +1463,17 @@ const app = {
     return this.twin || (this.currentBank && this.currentBank[this.currentIndex]) || null;
   },
 
-  /* TRY ONE LIKE IT — after a miss in Practice B / the Review, line up the same kind of
-     question with new numbers. Not in the teacher's auto-run. */
+  /* TRY ONE LIKE IT — after a miss on the Warm-Up, the Practice or the Review, line up TWO questions of the same
+     kind (same spot) with new numbers, one after the other. Not in the teacher's auto-run. */
   _offerTwin() {
-    const bank = window['FORM_' + TWINS[this.currentForm]];
     const orig = this.currentBank[this.currentIndex];
-    if (!this.lastMissed || !bank || !orig || reviewAutoRun) return false;
-    const t = bank.find(x => x.id.slice(1) === orig.id.slice(1));
-    if (!t) return false;
-    this.twin = { ...t, choices: shuffledCopy(t.choices), twinOf: orig.id };   // 11/20: a fair shuffle (sort-by-random put the answer first 36% of the time)
+    if (!this.lastMissed || !orig || !orig.spot || orig.kind || reviewAutoRun) return false;
+    const banks = (TWINS[this.currentForm] || []).map(L => window['FORM_' + L]).filter(Boolean);
+    const list = banks.map(b => b.find(x => x.spot === orig.spot)).filter(Boolean)
+      .map((t, i, all) => ({ ...t, choices: shuffledCopy(t.choices), twinOf: orig.id, twinNo: i + 1, twinOfN: all.length }));   // 11/20: a fair shuffle
+    if (!list.length) return false;
+    this.twin = list[0];
+    this.twinQueue = list.slice(1);
     this.lastMissed = false;
     return true;
   },
@@ -1500,6 +1504,7 @@ const app = {
     this.currentIndex  = 0;
     this.questionLocked = false;   // a finished form leaves it set
     this.twin          = null;
+    this.twinQueue     = [];
     this.lastMissed    = false;
     this.timerSeconds  = 0;
 
@@ -1577,7 +1582,7 @@ const app = {
     this.events = saved.events || [];
     this.startedAt = saved.startedAt || new Date().toISOString();
     this.version = saved.version || 0;           // the saved questions are already that version's
-    this.twin = null; this.lastMissed = false;   // a twin is a bonus question — it is not carried across a restart
+    this.twin = null; this.twinQueue = []; this.lastMissed = false;   // a twin is a bonus question — it is not carried across a restart
     logEvent('resume');
     this.show('quiz-screen');
     this.startTimer();
@@ -1797,7 +1802,11 @@ const app = {
     document.getElementById('speak-q-btn').classList.remove('hidden');
     // "Try one like it" strip: shown only while a twin question is up
     const twinNote = document.getElementById('twin-note');
-    if (twinNote) twinNote.classList.toggle('hidden', !this.twin);
+    if (twinNote) {
+      twinNote.classList.toggle('hidden', !this.twin);
+      const no = document.getElementById('twin-no');   // "1 of 2" / "2 of 2" (11/22: two after every miss)
+      if (no) no.textContent = this.twin && this.twin.twinOfN > 1 ? ` (${this.twin.twinNo} of ${this.twin.twinOfN})` : '';
+    }
     document.getElementById('score-text').textContent    = `${getFirstName(this.studentName)} · ${this.score}`;
     document.getElementById('progress-fill').style.width = `${(this.currentIndex / total) * 100}%`;
 
@@ -2115,7 +2124,11 @@ const app = {
       // log (the dashboard reads it) and on the miss it follows (the end screen shows it).
       logEvent('twin', Object.assign({ id: q.id, of: q.twinOf, ok: correct }, correct ? {} : { pick: this.selectedAnswer }));
       const m = this.missedQuestions[this.missedQuestions.length - 1];
-      if (m && m.id === q.twinOf) m.twin = correct ? 'right' : 'wrong';
+      if (m && m.id === q.twinOf) {
+        m.twins = [...(m.twins || []), correct];
+        m.twinRight = m.twins.filter(Boolean).length;
+        m.twin = m.twins.every(Boolean) ? 'right' : 'wrong';   // 'right' only when every follow-up was right
+      }
     } else if (correct) {
       this.score++;
       this.streak++;
@@ -2212,7 +2225,12 @@ const app = {
   nextQuestion() {
     stopActiveSpeech();
     if (this.twin) {
-      this.twin = null;                       // the twin is done → on to the next question of the form
+      if (this.twinQueue && this.twinQueue.length) {   // follow-up 1 done → follow-up 2 (11/22: two after every miss)
+        this.twin = this.twinQueue.shift();
+        this.renderQuestion();
+        return;
+      }
+      this.twin = null;                       // the follow-ups are done → on to the next question of the form
     } else if (TWINS[this.currentForm] && this._offerTwin()) {
       this.renderQuestion();                  // a miss in a review → try one like it
       return;
@@ -2227,7 +2245,7 @@ const app = {
 
   /* ── FINISH SESSION ── */
   _finishSession() {
-    this.twin = null;
+    this.twin = null; this.twinQueue = [];
     this.finishedAt = new Date().toISOString(); logEvent('finish');
     this.stopTimerEngine();
     localStorage.removeItem(STORAGE_KEY);
@@ -2295,7 +2313,9 @@ const app = {
             <div style="margin:3px 0;">${formatMathText(m.q)}</div>
             <div>Your answer: <span style="color:var(--danger);">${formatMathText(m.yourAnswer)}</span>${showFix ? ` &nbsp; ✅ Correct: <strong style="color:var(--correct);">${formatMathText(m.correct)}</strong>` : ''}</div>
             ${showFix && m.explanation ? `<div style="margin-top:5px;font-size:0.85rem;color:#555;font-style:italic;">💡 ${formatMathText(m.explanation)}</div>` : ''}
-            ${m.twin ? `<div class="mi-twin ${m.twin}">🔁 Try one like it: ${m.twin === 'right' ? '✅ you got the next one right' : '❌ missed again — ask for help with this one'}</div>` : ''}
+            ${m.twin ? `<div class="mi-twin ${m.twin}">🔁 Try one like it: ${(m.twins || []).length > 1
+              ? (m.twin === 'right' ? `✅ you got both of the next ones right` : m.twinRight ? `✅ ${m.twinRight} of ${m.twins.length} right · ask for help with this one` : '❌ missed both again — ask for help with this one')
+              : (m.twin === 'right' ? '✅ you got the next one right' : '❌ missed again — ask for help with this one')}</div>` : ''}
           </div>`
         ).join('');
     } else {
