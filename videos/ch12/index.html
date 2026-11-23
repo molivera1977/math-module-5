@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>How many now? · Math Module 5</title>
+<link rel="stylesheet" href="../lib/engine.css?v=fa68c4a8">
+<link rel="expect" href="#bar" blocking="render">
+</head>
+<body>
+<script src="../lib/engine.js?v=d6885892"></script>
+<script src="../lib/mm5.js?v=a0ee7da4"></script>
+<script src="../lib/embed.js?v=3bc13d2d"></script>
+<script src="audio/en/timings.js?v=9ea6a5b9"></script>
+<script>
+'use strict';
+/* Mr. O's 4th grade · Math Module 5, Lesson 5.7: two-step word problems, "multiply first, then add" (11/23, his
+   "Yes, build it now"; the questions at spots 6 and 13 and the Warm-Up's "Two-step problems" card).
+   Drawn the way HIS board writes it (Lesson 5.7 board notes, the "How many now?" page and "The × comes second" page):
+   the story at the top with the question underlined in red, then his four numbered steps in teal circles:
+     1  Write the equation. 2 × 44 + 9 = n (blue card; "n = beads she has now")   2  Multiply first: 2 × 44 = 88
+     3  Then add ("Do not stop at 88."): 88 + 9 = 97                             4  n = 97 beads (orange, 97 ringed red)
+   "2 × 44" (the 2 jars of 44) keeps one colour, purple, all the way; a small picture of the 2 jars and the 9 beads.
+   Watch out = his classwork Part 2 "The × Comes Second": "Find the ×. Do it first, even when it comes second."
+   9 + 2 × 44 = n → Multiply first: 2 × 44 = 88 → Then add: 9 + 88 = 97; the trap, adding first (9 + 2), crossed out.
+   Remember = his classwork Part 3 steps. Numbers: math-module-5/tools/check_videos.js (none real, none on his sheets,
+   none the site's; nothing said, the story's own numbers included, is a choice at 6, 13 or the Warm-Up card; nothing
+   crossed out is a key there). r3 (11/23 Math Coach, reading specialist, Video Director): 43 → 44 (43 is a key at
+   X06 and W29), his classwork words, "Do not stop at 88", the ✓ waits for the 97, reveals on their words. */
+const CHAPTER = { number: 12, title: 'How many now?', minutes: 1, language: 'en' };
+
+const C12_PUR = '#8a35d6', C12_PUR_BG = '#f1e4fd';      // the 2 jars of 44 beads (2 × 44 and what it makes)
+const C12_SX = 330;                                       // his numbered steps: the teal circles' x
+const C12_TX = C12_SX + 56 * .48 + 34;                    // where a step's words start
+
+/* The story on a blue card (BLUE = the problem), each word as Ava reads it; the question on its own line, underlined
+   in red at tU. times = when each word is said (beat seconds). Returns { g, card, words, q }. */
+const c12Story = (p, statement, question, times, t0, tU, colours) => {
+  const size = 56, lead = 1.3, x = 150, y = 340, w = 1300;
+  const g = G(p, { o: 0 });
+  show(g, t0, .5);
+  const cardRect = mk('rect', { rx: 30, fill: BLUE_BG, stroke: '#b9cbf0', 'stroke-width': 3 }, g);
+  const a = dStory(g, statement, x, y, t0, { w, size, lead });
+  const q = dStory(g, question, x, a.bottom + size * lead, t0, { w, size, lead });
+  const words = [...a.words, ...q.words];
+  words.forEach((o, k) => { put(o.e, { o: 0 }); show(o.e, times[k], .3); });
+  colours.forEach(([wd, fill]) => { const e = a.word(wd); if (e) { e.setAttribute('fill', fill); if (/\d/.test(wd)) e.setAttribute('font-weight', 700); } });
+  q.underline(tU);
+  const card = { x: x - 40, y: y - size - 26, w: w + 80, h: q.bottom - y + size + 26 + size * .45 + 26 };
+  Object.entries({ x: card.x, y: card.y, width: card.w, height: card.h }).forEach(([k, v]) => cardRect.setAttribute(k, v));
+  return { g, card, words, q };
+};
+// the story shrinks to the top of the board (kids can look back at it while the steps are worked)
+const c12StoryUp = (s, t0, k = .72, top = 22) => {
+  const left = (1600 - s.card.w * k) / 2;
+  tw(s.g, { x: left - s.card.x * k, y: top - s.card.y * k, s: k }, t0, .8);
+};
+// her words as a line of plain text, each piece shown when she says it: pieces = [[str, t, fill?], …], centred on x
+const c12Say = (p, pieces, x, y, { size = 46, fill = INK, weight = 600 } = {}) => {
+  ctx2d.font = `${weight} ${size}px ${UI}`;
+  const ws = pieces.map(([s]) => ctx2d.measureText(s).width);
+  let cx = x - ws.reduce((a, b) => a + b, 0) / 2;
+  return pieces.map(([s, t, f], k) => {
+    const e = T(p, s, { x: cx, y, size, fill: f || fill, weight, o: 0 });
+    show(e, t, .4);
+    cx += ws[k];
+    return e;
+  });
+};
+// the 2 jars, each with 44 beads (a few beads drawn, "44" on the jar): jars pop in at t0, their 44 at t1; then the
+// 9 more beads land beside them at t2 with "9 more"
+const c12Jars = (p, x0, y0, t0, t1, t2) => {
+  const jw = 112, jh = 150, gap = 26;
+  [0, 1].forEach(k => {
+    const g = G(p, { x: x0 + k * (jw + gap) + jw / 2, y: y0 + jh / 2, o: 0, s: .6 });
+    mk('rect', { x: -jw / 2 + 14, y: -jh / 2 - 22, width: jw - 28, height: 24, rx: 6, fill: C12_PUR }, g);   // the lid
+    mk('rect', { x: -jw / 2, y: -jh / 2, width: jw, height: jh, rx: 24, fill: '#ffffff', stroke: C12_PUR, 'stroke-width': 4 }, g);
+    for (let i = 0; i < 10; i++) mk('circle', { cx: -34 + (i % 5) * 17, cy: 44 + Math.floor(i / 5) * 18, r: 7, fill: C12_PUR_BG, stroke: C12_PUR, 'stroke-width': 2 }, g);
+    tw(g, { o: 1, s: 1 }, t0 + k * .15, .4, back);
+    const n = T(g, '44', { x: 0, y: -8, size: 48, weight: 800, anchor: 'middle', fill: C12_PUR, o: 0 });
+    show(n, t1 + k * .12, .3);
+  });
+  const bx = x0 + 2 * (jw + gap) + 20;
+  for (let i = 0; i < 9; i++) {
+    const c = mk('circle', { cx: bx + (i % 3) * 30, cy: y0 + 52 + Math.floor(i / 3) * 30, r: 11, fill: TEAL }, p);
+    put(c, { o: 0 }); show(c, t2 + i * .04, .25);
+  }
+  const lab = T(p, '9 more', { x: bx + 30, y: y0 + 24, size: 34, weight: 700, anchor: 'middle', fill: TEAL, o: 0 });
+  show(lab, t2, .3);
+};
+
+// a red cross-out drawn on at t0 through pieces i..j of a line, rising left to right
+const c12Cross = (line, i, j, t0) => {
+  const row = line.row, sz = row.size;
+  const a = row[i]._px - row[i]._w / 2 + 4, b = row[j]._px + row[j]._w / 2 + 6;
+  const s = path(line, `M${a} ${row.y + sz * .1}L${b} ${row.y - sz * .88}`, { stroke: RED, 'stroke-width': 7, 'stroke-linecap': 'round', fill: 'none' }, { d: 0 });
+  draw(s, t0, .4);
+  return s;
+};
+
+// his red ring round the answer, drawn on at t0 around piece k of a line (holds the digits' whole box)
+const c12Ring = (p, line, k, t0, bold = false) => {
+  const e = line.row[k], sz = line.row.size, w0 = e._w * (bold ? 1.12 : 1) + (bold ? 10 : 4), h0 = sz * .72;
+  return dRing(p, e._px, line.row.y - sz * .36, w0 / .82, h0 / .57, t0, RED);
+};
+
+const BEATS = [
+  ['intro', 'How many now?', titleBeat('Lesson 5.7', 'How many now?', 'Multiply first. Then add.')],
+
+  ['story', 'Read along', (m) => {
+    const p = panel(0);
+    const at = (k, t) => m(k, t - TIMINGS.story.marks[k]);
+    // "Kim has two jars. Each jar has forty-four beads. She finds nine more beads. How many beads does she have now?"
+    const times = [1.39, 1.74, 1.98, 2.18, 3.22, 3.62, 3.97, 4.25, 4.94, 5.90, 6.23, 6.67, 7.12, 7.37,
+      8.39, 8.64, 8.89, 9.18, 9.34, 9.48, 9.64].map(t => at('r', t));
+    // "Underline the question." — the red line under the question as she says "question"
+    S.story = c12Story(p, 'Kim has 2 jars. Each jar has 44 beads. She finds 9 more beads.', 'How many beads does she have now?',
+      times, .3, at('u', 11.17), [['2', C12_PUR], ['44', C12_PUR], ['9', TEAL]]);
+  }],
+
+  ['steps', 'Multiply, then add', (m) => {
+    const p = S.panel;
+    const at = (k, t) => m(k, t - TIMINGS.steps.marks[k]);
+    c12StoryUp(S.story, .1);
+    const badge = (n, y, t) => dBadge(p, n, C12_SX, y - 56 * .34, t, { r: 56 * .48 });
+    // "Step one. Write the equation. Two times forty-four plus nine equals n." — each part as she says it
+    badge(1, 310, at('s1', .63));                     // on "one", after the story card has moved up (r3)
+    dLine(p, ['Write the equation.'], C12_TX, 310, at('s1', 1.47), { size: 56, anchor: 'start' });
+    const eq = dLine(p, [{ t: '2', fill: C12_PUR }, { t: ' × ', fill: C12_PUR }, { t: '44', fill: C12_PUR }, ' + ', { t: '9', fill: TEAL }, ' = ', 'n'],
+      C12_TX + 10, 412, m('eq'), { size: 66, anchor: 'start', card: BLUE_BG });
+    dLater(eq, [1], at('eq', 3.37));
+    dLater(eq, [2], at('eq', 3.81));
+    dLater(eq, [3], at('eq', 4.54));
+    dLater(eq, [4], at('eq', 4.91));
+    dLater(eq, [5], at('eq', 5.26));
+    dLater(eq, [6], at('eq', 5.67));
+    // "n is the beads she has now." — his label beside the equation (the question's own words, r3)
+    const lab = dLine(p, ['n', ' = ', 'beads', ' she has now'], eq._card.x + eq._card.w + 34, 412, m('nn'), { size: 46, anchor: 'start' });
+    dLater(lab, [1], at('nn', 6.81));
+    dLater(lab, [2], at('nn', 7.11));
+    dLater(lab, [3], at('nn', 7.54));
+    dNudge(eq.row[6], m('nn', .05));
+    // the 2 jars of 44 beads and the 9 more ("two … forty-four … nine"), beside steps 2 and 3
+    c12Jars(p, 1090, 470, at('eq', 3.06), at('eq', 3.81), at('eq', 4.91));
+    // "Step two. Multiply first. Two times forty-four is eighty-eight."
+    badge(2, 528, m('s2'));
+    const mul = dLine(p, ['Multiply first: ', { t: '2', fill: C12_PUR }, { t: ' × ', fill: C12_PUR }, { t: '44', fill: C12_PUR }, ' = ', { t: '88', fill: C12_PUR }],
+      C12_TX, 528, at('s2', 10.14), { size: 56, anchor: 'start' });
+    dLater(mul, [1], m('m'));
+    dLater(mul, [2], at('m', 12.15));
+    dLater(mul, [3], at('m', 12.58));
+    dLater(mul, [4, 5], at('m', 13.52));
+    [0, 1, 2].forEach((k, j) => dNudge(eq.row[k], m('m', .05 + j * .05)));
+    // "Step three. Then add. Do not stop at eighty-eight." — the mistake every spot this video plays at names
+    // ("Did only the first step"), in red under the jars (Math Coach r3)
+    badge(3, 632, m('s3'));
+    const add = dLine(p, ['Then add: ', { t: '88', fill: C12_PUR }, ' + ', { t: '9', fill: TEAL }, ' = ', { t: '97', fill: ORANGE }], C12_TX, 632, at('s3', 15.96), { size: 56, anchor: 'start' });
+    c12Say(p, [['Do not stop at ', m('stop')], ['88', at('stop', 17.99), C12_PUR], ['.', at('stop', 17.99)]], 1290, 712, { size: 40, fill: RED, weight: 700 });
+    // "Eighty-eight plus nine is ninety-seven."
+    dLater(add, [1], m('ad'));
+    dLater(add, [2], at('ad', 19.44));
+    dLater(add, [3], at('ad', 19.74));
+    dLater(add, [4, 5], at('ad', 20.33));
+    // "Step four. n equals ninety-seven beads." — the answer, orange, the 97 ringed in red as she says it
+    badge(4, 752, m('s4'));
+    const ans = dLine(p, [{ t: 'n', fill: ORANGE }, { t: ' =  ', fill: ORANGE }, { t: '97', fill: ORANGE }, { t: '  beads', fill: ORANGE }],
+      C12_TX + 10, 752, m('n'), { size: 64, anchor: 'start', card: ORANGE_BG });
+    ans.row[2].querySelectorAll('text').forEach(e => e.setAttribute('font-weight', 700));   // the number bold
+    dLater(ans, [1], at('n', 23.52));
+    dLater(ans, [2], at('n', 24.10));
+    c12Ring(p, ans, 2, at('n', 24.14), true);
+    dLater(ans, [3], at('n', 24.99));
+  }],
+
+  ['mistake', 'Watch out', (m) => {
+    const p = panel(0);
+    const at = (k, t) => m(k, t - TIMINGS.mistake.marks[k]);
+    dWatchOut(p, .3, 800, 100);
+    // "Find the times sign. Do it first, even when it comes second." — his classwork Part 2, word for word (r3)
+    c12Say(p, [['Find the ', m('w')], ['×', at('w', 1.83), C12_PUR], ['.', at('w', 2.18)], [' Do it first,', at('w', 3.08)], [' even when it comes second.', at('w', 4.21)]],
+      800, 190, { size: 44 });
+    // "Nine plus two times forty-four equals n." — the equation, each part as she says it
+    const eq = dLine(p, [{ t: '9', fill: TEAL }, ' + ', { t: '2', fill: C12_PUR }, { t: ' × ', fill: C12_PUR }, { t: '44', fill: C12_PUR }, ' = ', 'n'],
+      800, 320, m('eq'), { size: 72, card: BLUE_BG });
+    dLater(eq, [1], at('eq', 6.57));
+    dLater(eq, [2], at('eq', 6.95));
+    dLater(eq, [3], at('eq', 7.22));
+    dLater(eq, [4], at('eq', 7.72));
+    dLater(eq, [5], at('eq', 8.42));
+    dLater(eq, [6], at('eq', 8.84));
+    // his numbered steps in teal circles, labelled as his page labels them (r1: a plain "1" / "2" in front read as
+    // "12 × 43"; r3: "Multiply first:" / "Then add:", the words Ava says)
+    const WX = 470;
+    // "Multiply first. Two times forty-four is eighty-eight." — the 2 × 44 in the equation nudged as she says it
+    dBadge(p, 1, WX - 80, 450 - 60 * .34, m('still'), { r: 60 * .48 });
+    const s1 = dLine(p, ['Multiply first: ', { t: '2', fill: C12_PUR }, { t: ' × ', fill: C12_PUR }, { t: '44', fill: C12_PUR }, ' = ', { t: '88', fill: C12_PUR }],
+      WX, 450, m('still'), { size: 60, anchor: 'start' });
+    dLater(s1, [1], at('still', 11.19));
+    dLater(s1, [2], at('still', 11.48));
+    dLater(s1, [3], at('still', 11.91));
+    dLater(s1, [4, 5], at('still', 12.85));
+    [[2, 11.19], [3, 11.48], [4, 11.91]].forEach(([k, t]) => dNudge(eq.row[k], at('still', t)));
+    // "Then add. Nine plus eighty-eight is ninety-seven." — the ✓ only once the 97 is there (Video Director r3)
+    dBadge(p, 2, WX - 80, 560 - 60 * .34, m('ad'), { r: 60 * .48 });
+    const s2 = dLine(p, ['Then add: ', { t: '9', fill: TEAL }, ' + ', { t: '88', fill: C12_PUR }, ' = ', { t: '97', fill: ORANGE }], WX, 560, m('ad'), { size: 60, anchor: 'start', card: ORANGE_BG });
+    dLater(s2, [1], at('ad', 14.84));
+    dLater(s2, [2], at('ad', 15.23));
+    dLater(s2, [3], at('ad', 15.62));
+    dLater(s2, [4, 5], at('ad', 16.44));
+    dTick(p, s2._card.x + s2._card.w + 44, 560 - 60 * .3, at('ad', 16.84));
+    // "Do not add first. Not nine plus two." — the red note, then "9 + 2" on a red card, crossed out
+    c12Say(p, [['Do not add first.', m('not')]], 800, 688, { size: 44, fill: RED, weight: 700 });
+    const bad = dLine(p, [{ t: '9', fill: RED }, { t: ' + ', fill: RED }, { t: '2', fill: RED }], 800, 800, at('not', 19.51), { size: 64, card: RED_BG });
+    dLater(bad, [0], at('not', 19.88));
+    dLater(bad, [1], at('not', 20.18));
+    dLater(bad, [2], at('not', 20.52));
+    c12Cross(bad, 0, 2, at('not', 20.75));
+  }, { minDur: 23.8 }],          // the full board held 2.6 s after the cross-out, as video 11 holds it
+
+  // his classwork Part 3 steps; no purple row (purple = the 2 jars here) — blue, green, sky, slate
+  ['wrap', 'Remember', rememberBeat([['Underline the question.', 'w1'], ['Write the equation.', 'w2'], ['Multiply first.', 'w3'], ['Then add.', 'w4']], { rows: [0, 1, 6, 8] })],
+].map(([id, title, run, extra]) => ({ id, title, run, ...extra }));
+
+boot();
+</script>
+</body>
+</html>

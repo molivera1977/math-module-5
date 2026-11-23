@@ -201,15 +201,17 @@ const titleBeat = (lesson, title, sub) => (m) => {
   dText(g.parentNode, sub, 800, 580, m('sub'), { size: 40, fill: COL.dim });
 };
 /* THE "REMEMBER" CARD every video ends with: numbered steps at their marks, then "Now you try." at [[end]]
-   (lines = [['Cover the zeros.', 'w1'], …]; none for a video that ends on "Now you try." alone) */
-const rememberBeat = (lines = []) => (m) => {
+   (lines = [['Cover the zeros.', 'w1'], …]; none for a video that ends on "Now you try." alone)
+   rows = which GROUP colours the rows take (11/23 Video Director, video 12: row 3 was purple, the colour that video
+   gives its 2 jars of 44; the default keeps every other video as it was) */
+const rememberBeat = (lines = [], { rows = [0, 1, 2, 3, 4, 5, 6, 7, 8] } = {}) => (m) => {
   const p = panel(0);
   const top = lines.length ? 250 : 380;
   if (lines.length) dText(p, 'Remember', 800, 120, .3, { size: 52, fill: BLUE, weight: 800 });
   lines.forEach(([str, mark], i) => {
     const g = G(p, { x: -16, y: top + i * 132, o: 0 });
-    mk('rect', { x: 250, y: -70, width: 1100, height: 108, rx: 26, fill: GROUP_BG[i] }, g);
-    mk('circle', { cx: 300, cy: -16, r: 30, fill: GROUP[i] }, g);
+    mk('rect', { x: 250, y: -70, width: 1100, height: 108, rx: 26, fill: GROUP_BG[rows[i]] }, g);
+    mk('circle', { cx: 300, cy: -16, r: 30, fill: GROUP[rows[i]] }, g);
     T(g, String(i + 1), { x: 300, y: -4, size: 34, fill: '#ffffff', weight: 700, anchor: 'middle' });
     T(g, str, { x: 370, y: 0, size: 44, weight: 600 });
     tw(g, { o: 1, x: 0 }, m(mark), .6);
