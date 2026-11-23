@@ -19,8 +19,10 @@ window.MM4_VIDEOS = {
   // the Warm-Up's 👀 Watch cards, by their title (the same in every version)
   watch: {
     'Base-ten blocks': 1, 'Area models': 2, 'Expanded form': 4, 'Partial products': 6, 'The short way': 8,
-    'Two-step problems': 9,
+    // 'Two-step problems' has no video since 11/23: video 9 taught "one group first" (add, then multiply); his Lesson 5.7
+    // teaches multiply first, then add ("never test what we haven't taught"), so the card is the read-aloud worked example
   },
   // each of the 15 spots (the same kind of question at the same spot on every part) → its video
-  spot: { 1: 2, 2: 7, 3: 8, 4: 8, 5: 4, 6: 9, 7: 3, 8: 5, 9: 6, 10: 1, 11: 1, 12: 10, 13: 9, 14: 11, 15: 11 },
+  // spots 6 and 13: no video since 11/23 (they are multiply first, then add; video 9 taught adding first)
+  spot: { 1: 2, 2: 7, 3: 8, 4: 8, 5: 4, 7: 3, 8: 5, 9: 6, 10: 1, 11: 1, 12: 10, 14: 11, 15: 11 },
 };
