@@ -59,7 +59,9 @@ const TEST_OPEN       = true;    // Step 4 · Test — official (its retake need
 // The Teacher PIN lets one student past a gate (his rule from earlier the same day: skipping a step
 // "should need a teacher pin entry"). Scores are remembered on the device, like everything else here.
 // ANY_ORDER true = no gates at all (every open part can be started).
-const ANY_ORDER     = false;
+// ON 11/24 (Marcos, test day: "make sure every section is unlocked for the review and test"): every student can start
+// every part, the Review and the Test included. Still kept: the Review's 2 tries, the retake's Teacher PIN, the Test at school.
+const ANY_ORDER     = true;
 const PASS_PCT      = 70;
 const INSTRUCT_SECS = 15;
 const READ_SECS     = 12;
