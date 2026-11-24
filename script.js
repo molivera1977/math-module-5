@@ -2158,7 +2158,10 @@ const app = {
     // 📍 Right Now on the dashboard (Marcos 11/20: "is it possible to view the screens of students as they take the review
     // or test" → "Yes, add it"): every scored answer rides in the log, right or missed, so the teacher sees a ✓ / ✗ box
     // per question while the student works. One try per question; steps and "try one like it" log their own kinds above.
-    if (!isStep && !isTwin) logEvent('answer', { id: q.id, ok: correct });
+    // 11/24 (Marcos, on the dashboard's 📍 Right Now: "shouldnt i see the problem"): each answer carries its question and
+    // its right answer, so a tapped ✓ box shows the problem in this student's own numbers (a picture question's numbers
+    // are only in its answer: "2 × 112 = 224")
+    if (!isStep && !isTwin) logEvent('answer', { id: q.id, ok: correct, say: q.q, a: String(q.answer) });
 
     // Practice A, Practice B and the Review teach: the right answer + why, every time.
     // The Test and its retake: mark only the student's own pick — the right
